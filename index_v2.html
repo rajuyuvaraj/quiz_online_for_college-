@@ -1,0 +1,2198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Quiz Mania — INNOVEX 2.0</title>
+<meta name="description" content="Quiz Mania - Technical Quiz Event by Dept of Computer Science, Bengaluru City University. INNOVEX 2.0 — 2026">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#05060f;
+  --bg2:#0b0d1e;
+  --surface:rgba(255,255,255,0.03);
+  --glass:rgba(255,255,255,0.04);
+  --glass-border:rgba(255,255,255,0.08);
+  --glass-hover:rgba(255,255,255,0.12);
+  --neon:#00f5ff;
+  --neon2:#7b2ff7;
+  --neon3:#ff2d78;
+  --gold:#fbbf24;
+  --success:#10b981;
+  --danger:#f43f5e;
+  --warning:#f59e0b;
+  --text:#e8eaf6;
+  --text-dim:#64748b;
+  --text-mid:#94a3b8;
+  --radius:14px;
+  --blur:blur(16px);
+  --font-head:'Bebas Neue',sans-serif;
+  --font-body:'Space Grotesk',sans-serif;
+  --font-mono:'IBM Plex Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100vh;overflow-x:hidden;cursor:default}
+
+/* ─── GRID OVERLAY ─── */
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,245,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,255,0.025) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}
+
+/* ─── CANVAS ─── */
+canvas#bg{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:.7}
+
+/* ─── NAV ─── */
+.navbar{position:fixed;top:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:60px;background:rgba(5,6,15,0.8);backdrop-filter:var(--blur);border-bottom:1px solid rgba(0,245,255,0.08)}
+.nav-logo{font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;background:linear-gradient(135deg,var(--neon),var(--neon2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;cursor:pointer;transition:opacity .2s}
+.nav-logo:hover{opacity:.8}
+.nav-pill{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:50px;padding:4px}
+.nav-user{font-size:.78rem;color:var(--text-mid);padding:0 10px;font-weight:500}
+.nav-right{display:flex;align-items:center;gap:10px}
+.hamburger{display:none;background:none;border:none;color:var(--text);font-size:1.3rem;cursor:pointer;padding:6px}
+
+/* ─── BUTTONS ─── */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border:none;border-radius:8px;font-family:var(--font-body);font-size:.88rem;font-weight:600;cursor:pointer;transition:all .2s ease;text-decoration:none;letter-spacing:.3px}
+.btn-neon{background:var(--neon);color:#05060f}.btn-neon:hover{box-shadow:0 0 28px rgba(0,245,255,.5);transform:translateY(-2px)}
+.btn-violet{background:var(--neon2);color:#fff}.btn-violet:hover{box-shadow:0 0 28px rgba(123,47,247,.5);transform:translateY(-2px)}
+.btn-outline{background:transparent;border:1px solid rgba(0,245,255,.25);color:var(--text)}.btn-outline:hover{border-color:var(--neon);color:var(--neon);background:rgba(0,245,255,.06)}
+.btn-danger{background:var(--danger);color:#fff}.btn-danger:hover{opacity:.85;transform:translateY(-1px)}
+.btn-success{background:var(--success);color:#fff}.btn-success:hover{opacity:.85}
+.btn-sm{padding:6px 14px;font-size:.78rem;gap:5px}
+.btn-icon{width:36px;height:36px;padding:0;justify-content:center;border-radius:8px}
+
+/* ─── GLASS CARD ─── */
+.card{background:rgba(11,13,30,0.6);border:1px solid var(--glass-border);backdrop-filter:var(--blur);border-radius:var(--radius);padding:24px;transition:border-color .25s,box-shadow .25s}
+.card:hover{border-color:rgba(0,245,255,.15)}
+.card-glow{box-shadow:0 0 30px rgba(0,245,255,.1),inset 0 1px 0 rgba(0,245,255,.08)}
+.card-violet{box-shadow:0 0 30px rgba(123,47,247,.15),inset 0 1px 0 rgba(123,47,247,.1);border-color:rgba(123,47,247,.2)}
+.card-gold{box-shadow:0 0 30px rgba(251,191,36,.1),inset 0 1px 0 rgba(251,191,36,.08);border-color:rgba(251,191,36,.2)}
+
+/* ─── FORMS ─── */
+.form-group{margin-bottom:18px}
+.form-group label{display:block;margin-bottom:7px;font-size:.78rem;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.8px}
+.form-group input,.form-group textarea,.form-group select{width:100%;padding:12px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;color:var(--text);font-size:.9rem;font-family:var(--font-body);transition:border .2s,box-shadow .2s}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{outline:none;border-color:rgba(0,245,255,.4);box-shadow:0 0 0 3px rgba(0,245,255,.08)}
+.form-group input::placeholder{color:var(--text-dim)}
+.form-group select option{background:#12142a;color:var(--text)}
+.form-group textarea{resize:vertical;min-height:80px}
+
+/* ─── PAGE SYSTEM ─── */
+.page{display:none;position:relative;z-index:1;min-height:100vh;padding-top:70px}
+.page.active{display:block;animation:pageIn .35s cubic-bezier(.16,1,.3,1)}
+@keyframes pageIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.container{max-width:1120px;margin:0 auto;padding:24px 20px}
+
+/* ─── LANDING HERO ─── */
+.hero{text-align:center;padding:60px 0 40px;position:relative}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border:1px solid rgba(0,245,255,.2);border-radius:50px;background:rgba(0,245,255,.06);color:var(--neon);font-size:.75rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:28px;animation:badgePulse 3s ease-in-out infinite}
+@keyframes badgePulse{0%,100%{box-shadow:0 0 0 0 rgba(0,245,255,.2)}50%{box-shadow:0 0 0 6px rgba(0,245,255,0)}}
+.hero-dot{width:6px;height:6px;background:var(--neon);border-radius:50%;display:inline-block;animation:blink 1.2s step-end infinite}
+@keyframes blink{50%{opacity:0}}
+.hero h1{font-family:var(--font-head);font-size:clamp(4rem,12vw,8rem);letter-spacing:6px;line-height:.9;margin-bottom:8px;background:linear-gradient(180deg,#fff 0%,var(--neon) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 40px rgba(0,245,255,.3))}
+.hero-sub{font-family:var(--font-head);font-size:clamp(1.2rem,3vw,1.8rem);letter-spacing:8px;color:var(--neon2);margin-bottom:6px;opacity:.85}
+.hero-detail{font-size:.85rem;color:var(--text-dim);margin-top:6px;letter-spacing:.3px}
+.hero-divider{width:60px;height:2px;background:linear-gradient(90deg,var(--neon),var(--neon2));margin:28px auto;border-radius:1px}
+
+/* ─── COUNTDOWN ─── */
+.countdown{display:flex;justify-content:center;gap:12px;margin:28px 0;flex-wrap:wrap}
+.countdown .unit{position:relative;background:rgba(0,245,255,0.04);border:1px solid rgba(0,245,255,.12);border-radius:12px;padding:18px 22px;min-width:82px;text-align:center;overflow:hidden}
+.countdown .unit::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--neon),transparent);opacity:.6}
+.countdown .num{font-family:var(--font-mono);font-size:2.2rem;font-weight:600;color:var(--neon);line-height:1;display:block}
+.countdown .lbl{font-size:.62rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;margin-top:6px;display:block}
+
+/* ─── CTA BUTTONS ─── */
+.cta-buttons{display:flex;gap:14px;justify-content:center;margin:32px 0;flex-wrap:wrap}
+
+/* ─── SECTION HEADINGS ─── */
+.section-head{text-align:center;margin:50px 0 28px}
+.section-head h2{font-family:var(--font-head);font-size:clamp(2rem,5vw,3rem);letter-spacing:3px;background:linear-gradient(135deg,var(--text),var(--neon));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.section-head p{color:var(--text-dim);font-size:.88rem;margin-top:6px}
+
+/* ─── GUIDELINES ─── */
+.guidelines-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin:20px 0}
+.guideline-item{display:flex;align-items:flex-start;gap:14px;padding:14px 18px;background:rgba(255,255,255,0.025);border:1px solid var(--glass-border);border-radius:10px;transition:border-color .2s}
+.guideline-item:hover{border-color:rgba(0,245,255,.2)}
+.guideline-icon{width:32px;height:32px;flex-shrink:0;background:rgba(0,245,255,.08);border:1px solid rgba(0,245,255,.15);border-radius:8px;display:grid;place-items:center;font-size:.9rem}
+.guideline-text{font-size:.85rem;color:var(--text-mid);line-height:1.5;padding-top:3px}
+
+/* ─── HOW TO PLAY ─── */
+.steps-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin:20px 0}
+.step-card{text-align:center;padding:28px 20px;position:relative;overflow:hidden}
+.step-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--neon2),transparent);opacity:.4;transition:opacity .2s}
+.step-card:hover::after{opacity:1}
+.step-num{font-family:var(--font-head);font-size:3.5rem;letter-spacing:2px;color:transparent;-webkit-text-stroke:1px rgba(0,245,255,.25);line-height:1;margin-bottom:12px;display:block}
+.step-card h4{font-size:1rem;color:var(--neon);margin-bottom:8px;letter-spacing:.5px}
+.step-card p{font-size:.8rem;color:var(--text-dim);line-height:1.6}
+
+/* ─── REGISTER / LOGIN ─── */
+.auth-wrap{max-width:440px;margin:30px auto}
+.auth-header{text-align:center;margin-bottom:28px}
+.auth-header h2{font-family:var(--font-head);font-size:2.4rem;letter-spacing:3px;color:var(--text)}
+.auth-header p{color:var(--text-dim);font-size:.85rem;margin-top:6px}
+.code-reveal{text-align:center;padding:36px 24px}
+.code-reveal .big-code{font-family:var(--font-mono);font-size:2.6rem;font-weight:600;color:var(--neon);letter-spacing:6px;text-shadow:0 0 20px rgba(0,245,255,.4);display:inline-block;padding:12px 28px;border:1px solid rgba(0,245,255,.2);border-radius:12px;background:rgba(0,245,255,.04)}
+.code-reveal .note{font-size:.8rem;color:var(--warning);margin-top:16px;display:flex;align-items:center;justify-content:center;gap:6px}
+
+/* ─── PLAYER DASH ─── */
+.dash-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:28px;padding:20px 24px;background:rgba(11,13,30,0.6);border:1px solid var(--glass-border);border-radius:var(--radius)}
+.dash-info h2{font-family:var(--font-head);font-size:1.8rem;letter-spacing:2px}
+.dash-info span{font-size:.82rem;color:var(--text-dim);margin-top:4px;display:block}
+.round-badge{display:inline-flex;align-items:center;gap:7px;padding:7px 16px;border-radius:50px;font-size:.78rem;font-weight:600;letter-spacing:.5px}
+.badge-active{background:rgba(16,185,129,.1);color:var(--success);border:1px solid rgba(16,185,129,.25)}
+.badge-inactive{background:rgba(100,116,139,.08);color:var(--text-dim);border:1px solid rgba(100,116,139,.15)}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:blink 1.2s step-end infinite}
+
+/* ─── QUIZ INTERFACE ─── */
+.quiz-wrap{max-width:700px;margin:0 auto}
+.quiz-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:0 2px}
+.quiz-q-count{font-size:.8rem;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.8px}
+.progress-track{width:100%;height:4px;background:rgba(255,255,255,.06);border-radius:2px;margin-bottom:20px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--neon2),var(--neon));border-radius:2px;transition:width .4s cubic-bezier(.16,1,.3,1)}
+.timer-ring{position:relative;width:72px;height:72px;margin:0 auto 20px}
+.timer-ring svg{position:absolute;top:0;left:0;transform:rotate(-90deg)}
+.timer-ring circle{fill:none;stroke-width:3}
+.timer-ring .track{stroke:rgba(255,255,255,.06)}
+.timer-ring .fill{stroke:var(--neon);stroke-linecap:round;stroke-dasharray:197;transition:stroke-dashoffset .9s linear,stroke .3s}
+.timer-num{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--font-mono);font-size:1.4rem;font-weight:600;color:var(--neon)}
+.timer-num.danger{color:var(--danger)}
+.timer-ring.danger .fill{stroke:var(--danger)}
+.q-text{font-size:1.05rem;line-height:1.65;margin:0 0 22px;color:var(--text);font-weight:500}
+.q-options{display:grid;gap:10px}
+.q-opt{padding:14px 18px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;cursor:pointer;font-size:.9rem;transition:all .2s;text-align:left;display:flex;align-items:center;gap:12px;color:var(--text)}
+.q-opt-letter{width:28px;height:28px;flex-shrink:0;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:6px;display:grid;place-items:center;font-family:var(--font-mono);font-size:.75rem;font-weight:600;transition:all .2s}
+.q-opt:hover{border-color:rgba(0,245,255,.3);background:rgba(0,245,255,.04);transform:translateX(3px)}
+.q-opt:hover .q-opt-letter{background:rgba(0,245,255,.12);border-color:rgba(0,245,255,.3);color:var(--neon)}
+.q-opt.selected{border-color:var(--neon);background:rgba(0,245,255,.07);box-shadow:0 0 0 1px rgba(0,245,255,.15)}
+.q-opt.selected .q-opt-letter{background:rgba(0,245,255,.15);border-color:var(--neon);color:var(--neon)}
+.q-opt.correct{border-color:var(--success);background:rgba(16,185,129,.08)}
+.q-opt.correct .q-opt-letter{background:rgba(16,185,129,.15);border-color:var(--success);color:var(--success)}
+.q-opt.wrong{border-color:var(--danger);background:rgba(244,63,94,.08)}
+.q-opt.wrong .q-opt-letter{background:rgba(244,63,94,.15);border-color:var(--danger);color:var(--danger)}
+.q-nav{display:flex;justify-content:flex-end;margin-top:22px}
+
+/* ─── QUIZ RESULT ─── */
+.result-card{text-align:center;padding:40px 24px}
+.result-score{font-family:var(--font-head);font-size:6rem;letter-spacing:4px;background:linear-gradient(135deg,var(--neon),var(--neon2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;line-height:1;display:block}
+.result-label{font-size:.8rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;margin-top:4px}
+.result-stats{display:flex;gap:16px;justify-content:center;margin:24px 0;flex-wrap:wrap}
+.result-stat{padding:12px 20px;background:rgba(255,255,255,.03);border:1px solid var(--glass-border);border-radius:10px;text-align:center;min-width:90px}
+.result-stat .sv{font-family:var(--font-mono);font-size:1.4rem;font-weight:600}
+.result-stat .sl{font-size:.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-top:3px}
+
+/* ─── LEADERBOARD ─── */
+.lb-table{width:100%;border-collapse:collapse}
+.lb-table th{padding:10px 14px;text-align:left;border-bottom:1px solid var(--glass-border);font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim)}
+.lb-table td{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.04);font-size:.88rem}
+.lb-table tr:hover td{background:rgba(255,255,255,.02)}
+.lb-rank-1 td:first-child{color:var(--gold);font-weight:700}
+.lb-rank-2 td:first-child{color:#c0c0c0;font-weight:700}
+.lb-rank-3 td:first-child{color:#cd7f32;font-weight:700}
+
+/* ─── ADMIN ─── */
+.admin-shell{display:flex;min-height:calc(100vh - 60px)}
+.sidebar{width:210px;background:rgba(5,6,15,.9);border-right:1px solid var(--glass-border);padding:20px 0;flex-shrink:0}
+.sidebar-logo{padding:8px 20px 20px;font-family:var(--font-head);font-size:1.1rem;letter-spacing:2px;color:var(--text-dim);border-bottom:1px solid var(--glass-border);margin-bottom:10px}
+.sidebar a{display:flex;align-items:center;gap:10px;padding:11px 20px;color:var(--text-dim);text-decoration:none;font-size:.84rem;font-weight:500;transition:all .2s;border-left:2px solid transparent;letter-spacing:.2px}
+.sidebar a .s-icon{font-size:1rem;opacity:.6;transition:opacity .2s}
+.sidebar a:hover,.sidebar a.active{color:var(--neon);background:rgba(0,245,255,.04);border-left-color:var(--neon)}
+.sidebar a:hover .s-icon,.sidebar a.active .s-icon{opacity:1}
+.admin-content{flex:1;padding:28px;min-width:0;overflow-x:hidden}
+.admin-tab{display:none}.admin-tab.active{display:block;animation:pageIn .3s ease}
+.admin-tab-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:22px}
+.admin-tab-head h2{font-family:var(--font-head);font-size:1.8rem;letter-spacing:2px}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px}
+.stat-box{padding:18px;background:rgba(255,255,255,.03);border:1px solid var(--glass-border);border-radius:12px;text-align:center}
+.stat-box .sv{font-family:var(--font-mono);font-size:1.8rem;font-weight:600;color:var(--neon)}
+.stat-box .sl{font-size:.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+
+/* ─── TABLE ─── */
+.table-wrap{overflow-x:auto;margin:14px 0;border:1px solid var(--glass-border);border-radius:12px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:.83rem}
+th{padding:11px 14px;text-align:left;background:rgba(255,255,255,.025);font-weight:600;font-size:.7rem;text-transform:uppercase;letter-spacing:.8px;color:var(--text-dim)}
+td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.03);color:var(--text)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.02)}
+.mono{font-family:var(--font-mono);font-size:.82rem}
+
+/* ─── SEARCH / FILTER ─── */
+.search-bar{padding:9px 14px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:8px;color:var(--text);font-size:.84rem;transition:border .2s;font-family:var(--font-body)}
+.search-bar:focus{outline:none;border-color:rgba(0,245,255,.35)}
+.search-bar::placeholder{color:var(--text-dim)}
+.filter-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.filter-row select{padding:7px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:8px;color:var(--text);font-size:.82rem;font-family:var(--font-body)}
+.filter-row select:focus{outline:none;border-color:rgba(0,245,255,.3)}
+
+/* ─── ROUNDS GRID ─── */
+.rounds-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.round-card{position:relative;overflow:hidden}
+.round-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.round-card h3{font-family:var(--font-head);font-size:1.5rem;letter-spacing:2px}
+.round-card p{font-size:.82rem;color:var(--text-dim);line-height:1.55;margin-bottom:16px}
+.round-card-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.round-status{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:50px;font-size:.72rem;font-weight:600;letter-spacing:.5px}
+.round-active{background:rgba(16,185,129,.1);color:var(--success);border:1px solid rgba(16,185,129,.25)}
+.round-inactive{background:rgba(100,116,139,.08);color:var(--text-dim);border:1px solid rgba(100,116,139,.15)}
+.round-completed{background:rgba(123,47,247,.1);color:var(--neon2);border:1px solid rgba(123,47,247,.25)}
+
+/* ─── TOGGLE ─── */
+.toggle{position:relative;width:46px;height:26px;background:rgba(255,255,255,.1);border-radius:13px;cursor:pointer;transition:background .2s;border:1px solid rgba(255,255,255,.1);flex-shrink:0}
+.toggle.on{background:var(--neon);border-color:var(--neon)}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .22s cubic-bezier(.34,1.56,.64,1);box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.toggle.on::after{transform:translateX(20px)}
+
+/* ─── Q CARDS ─── */
+.q-card{margin-bottom:12px}
+.q-card h4{margin-bottom:8px;font-size:.9rem;line-height:1.5;color:var(--text)}
+.q-card-img{width:100%;max-width:320px;border-radius:10px;border:1px solid var(--glass-border);margin:10px 0;display:block}
+.q-meta{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.q-meta span{font-size:.68rem;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,.04);border:1px solid var(--glass-border);color:var(--text-dim)}
+.q-meta span.diff-easy{color:var(--success);border-color:rgba(16,185,129,.2);background:rgba(16,185,129,.06)}
+.q-meta span.diff-hard{color:var(--danger);border-color:rgba(244,63,94,.2);background:rgba(244,63,94,.06)}
+.q-meta span.diff-medium{color:var(--warning);border-color:rgba(245,158,11,.2);background:rgba(245,158,11,.06)}
+.q-img-quiz{width:100%;max-width:480px;border-radius:12px;border:1px solid var(--glass-border);margin:12px auto;display:block}
+
+/* ─── BAR CHART ─── */
+.bar-chart{display:flex;align-items:flex-end;gap:12px;height:180px;margin:20px 0;padding:0 8px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+.bar{width:100%;border-radius:6px 6px 0 0;transition:height .6s cubic-bezier(.16,1,.3,1);min-height:4px;position:relative}
+.bar::after{content:'';position:absolute;top:0;left:0;right:0;height:30%;background:rgba(255,255,255,.15);border-radius:6px 6px 0 0}
+.bar-label{font-size:.65rem;color:var(--text-dim);text-align:center;word-break:break-all;max-width:100%}
+.bar-val{font-family:var(--font-mono);font-size:.72rem;color:var(--neon)}
+
+/* ─── MODAL ─── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:5000;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.active{display:flex}
+.modal{background:#0d0f22;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:28px;max-width:520px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+
+/* ─── TOAST ─── */
+.toast-container{position:fixed;top:72px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{padding:11px 18px;border-radius:10px;font-size:.82rem;font-weight:500;animation:toastIn .3s cubic-bezier(.16,1,.3,1);max-width:320px;display:flex;align-items:center;gap:8px;pointer-events:all;backdrop-filter:var(--blur)}
+.toast-success{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);color:#6ee7b7}
+.toast-error{background:rgba(244,63,94,.15);border:1px solid rgba(244,63,94,.3);color:#fda4af}
+.toast-info{background:rgba(0,245,255,.1);border:1px solid rgba(0,245,255,.2);color:var(--neon)}
+@keyframes toastIn{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ─── CONFETTI ─── */
+.confetti-piece{position:fixed;z-index:9998;width:8px;height:8px;border-radius:2px;animation:confFall 2.5s ease-in forwards;pointer-events:none}
+@keyframes confFall{0%{opacity:1;transform:translateY(-20vh) rotate(0)}100%{opacity:0;transform:translateY(105vh) rotate(720deg)}}
+
+/* ─── BUZZER MODE ─── */
+.buzzer-overlay{display:none;position:fixed;inset:0;z-index:2000;background:var(--bg);flex-direction:column;overflow:hidden}
+.buzzer-overlay.active{display:flex}
+.buzzer-top{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:rgba(5,6,15,.9);border-bottom:1px solid var(--glass-border);flex-shrink:0}
+.buzzer-top h3{font-family:var(--font-head);font-size:1.2rem;letter-spacing:2px;color:var(--neon)}
+.buzzer-body{flex:1;display:flex;overflow:hidden}
+.buzzer-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;position:relative}
+.buzzer-sidebar{width:260px;background:rgba(5,6,15,.8);border-left:1px solid var(--glass-border);padding:20px;overflow-y:auto;flex-shrink:0}
+.buzzer-q-num{font-family:var(--font-mono);font-size:.8rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px}
+.buzzer-question{font-family:var(--font-body);font-size:clamp(1.4rem,3.5vw,2.2rem);font-weight:600;color:var(--text);line-height:1.5;max-width:800px;margin-bottom:24px}
+.buzzer-question img{max-width:400px;width:100%;border-radius:12px;margin:16px auto;display:block;border:1px solid var(--glass-border)}
+.buzzer-options{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:700px;width:100%;margin-bottom:24px}
+.buzzer-opt{padding:16px 20px;background:rgba(255,255,255,.03);border:1px solid var(--glass-border);border-radius:10px;font-size:1rem;color:var(--text);text-align:left;display:flex;align-items:center;gap:10px;transition:all .3s}
+.buzzer-opt .b-letter{width:32px;height:32px;flex-shrink:0;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;display:grid;place-items:center;font-family:var(--font-mono);font-weight:600;font-size:.85rem}
+.buzzer-opt.b-correct{border-color:var(--success);background:rgba(16,185,129,.12);box-shadow:0 0 20px rgba(16,185,129,.2)}
+.buzzer-opt.b-correct .b-letter{background:rgba(16,185,129,.2);border-color:var(--success);color:var(--success)}
+.buzzer-opt.b-wrong{border-color:var(--danger);background:rgba(244,63,94,.1)}
+.buzzer-teams{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:16px 0;max-width:700px}
+.buzzer-team-btn{padding:12px 24px;border-radius:10px;border:2px solid var(--glass-border);background:rgba(255,255,255,.03);color:var(--text);font-family:var(--font-body);font-size:.9rem;font-weight:600;cursor:pointer;transition:all .2s;min-width:120px;text-align:center}
+.buzzer-team-btn:hover{border-color:var(--neon);background:rgba(0,245,255,.06);transform:scale(1.03)}
+.buzzer-team-btn.buzzed{border-color:var(--neon);background:rgba(0,245,255,.15);color:var(--neon);box-shadow:0 0 25px rgba(0,245,255,.3);animation:buzzPulse .5s ease}
+@keyframes buzzPulse{0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
+.buzzer-verdict{display:flex;gap:10px;justify-content:center;margin:10px 0}
+.buzzer-waiting{font-family:var(--font-head);font-size:clamp(2rem,5vw,3.5rem);letter-spacing:4px;color:var(--text-dim);animation:waitPulse 2s ease-in-out infinite}
+@keyframes waitPulse{0%,100%{opacity:.4}50%{opacity:1}}
+.buzzer-flash{animation:flashBg .4s ease}
+@keyframes flashBg{0%{background:rgba(0,245,255,.15)}100%{background:transparent}}
+.buzzer-sb-title{font-family:var(--font-head);font-size:1rem;letter-spacing:2px;color:var(--text-dim);margin-bottom:14px;text-transform:uppercase}
+.buzzer-sb-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04);font-size:.85rem;transition:background .3s}
+.buzzer-sb-row.highlight{background:rgba(0,245,255,.08);border-radius:6px}
+.buzzer-sb-score{font-family:var(--font-mono);color:var(--neon);font-weight:600}
+.buzzer-sb-delta{font-family:var(--font-mono);font-size:.75rem;margin-left:6px;animation:deltaFade 1.5s ease forwards}
+@keyframes deltaFade{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-10px)}}
+.buzzer-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;margin:8px 0}
+@media(max-width:768px){.buzzer-sidebar{display:none}.buzzer-options{grid-template-columns:1fr}.buzzer-question{font-size:1.2rem}}
+
+/* ─── FINALE MODE ─── */
+.finale-overlay{display:none;position:fixed;inset:0;z-index:2000;background:var(--bg);flex-direction:column;overflow:hidden}
+.finale-overlay.active{display:flex}
+.finale-top{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:rgba(5,6,15,.9);border-bottom:1px solid var(--glass-border);flex-shrink:0}
+.finale-top h3{font-family:var(--font-head);font-size:1.2rem;letter-spacing:3px;background:linear-gradient(135deg,var(--gold),#ff6b35);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.finale-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;overflow-y:auto;position:relative}
+.finale-multiplier{display:inline-block;font-family:var(--font-head);font-size:clamp(1.4rem,4vw,2.5rem);letter-spacing:3px;padding:8px 28px;border-radius:12px;margin-bottom:18px}
+.finale-multiplier.m2{background:rgba(16,185,129,.15);border:1px solid var(--success);color:var(--success)}
+.finale-multiplier.m3{background:rgba(0,245,255,.1);border:1px solid var(--neon);color:var(--neon)}
+.finale-multiplier.m4{background:rgba(124,58,237,.15);border:1px solid var(--neon2);color:var(--neon2)}
+.finale-multiplier.m5{background:rgba(251,191,36,.15);border:1px solid var(--gold);color:var(--gold)}
+.finale-multiplier.m10{background:rgba(244,63,94,.15);border:1px solid var(--danger);color:var(--danger);animation:megaPulse 1s ease-in-out infinite}
+@keyframes megaPulse{0%,100%{box-shadow:0 0 10px rgba(244,63,94,.3)}50%{box-shadow:0 0 40px rgba(244,63,94,.6)}}
+.finale-category{font-family:var(--font-head);font-size:clamp(2rem,5vw,4rem);letter-spacing:5px;color:var(--text);margin:24px 0}
+.finale-q{font-size:clamp(1.3rem,3vw,2rem);color:var(--text);max-width:800px;line-height:1.6;margin-bottom:24px;font-weight:500}
+.finale-q img{max-width:400px;width:100%;border-radius:12px;margin:16px auto;display:block;border:1px solid var(--glass-border)}
+.finale-teams-row{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin:20px 0;max-width:900px}
+.finale-team-card{min-width:200px;padding:20px;border-radius:14px;border:1px solid var(--glass-border);background:rgba(255,255,255,.02);text-align:center;transition:all .4s}
+.finale-team-card.active-turn{border-color:var(--neon);box-shadow:0 0 30px rgba(0,245,255,.15)}
+.finale-team-name{font-family:var(--font-head);font-size:1.2rem;letter-spacing:2px;margin-bottom:8px}
+.finale-team-score{font-family:var(--font-mono);font-size:2rem;color:var(--neon);font-weight:700}
+.finale-team-wager{font-family:var(--font-mono);font-size:.85rem;color:var(--gold);margin-top:6px}
+.finale-wager-btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:12px 0}
+.finale-wager-btn{padding:10px 18px;border-radius:8px;border:1px solid var(--glass-border);background:rgba(255,255,255,.03);color:var(--text);font-family:var(--font-mono);font-size:.85rem;cursor:pointer;transition:all .2s}
+.finale-wager-btn:hover{border-color:var(--gold);color:var(--gold);background:rgba(251,191,36,.08)}
+.finale-wager-btn.selected{border-color:var(--gold);color:var(--gold);background:rgba(251,191,36,.15)}
+.finale-verdict-btn{padding:10px 20px;border-radius:8px;font-family:var(--font-body);font-size:.9rem;font-weight:600;cursor:pointer;border:none;transition:all .2s}
+.finale-verdict-btn.correct{background:rgba(16,185,129,.15);border:1px solid var(--success);color:var(--success)}
+.finale-verdict-btn.correct:hover{background:rgba(16,185,129,.3)}
+.finale-verdict-btn.wrong{background:rgba(244,63,94,.1);border:1px solid var(--danger);color:var(--danger)}
+.finale-verdict-btn.wrong:hover{background:rgba(244,63,94,.25)}
+.finale-score-change{position:absolute;font-family:var(--font-head);font-size:2rem;pointer-events:none;animation:scoreFloat 1.5s ease-out forwards;z-index:10}
+@keyframes scoreFloat{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-80px) scale(1.5)}}
+.finale-winner-trophy{font-size:clamp(4rem,10vw,8rem);margin-bottom:16px;animation:trophyBounce 1s ease infinite}
+@keyframes trophyBounce{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-14px) rotate(3deg)}}
+.finale-winner-name{font-family:var(--font-head);font-size:clamp(2.5rem,6vw,5rem);letter-spacing:6px;background:linear-gradient(135deg,var(--gold),#ff6b35,var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 2s linear infinite;background-size:200% 100%}
+@keyframes shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
+@media(max-width:768px){.finale-teams-row{flex-direction:column;align-items:center}.finale-team-card{min-width:160px}}
+
+/* ─── DIVIDER ─── */
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--glass-border),transparent);margin:40px 0}
+
+/* ─── PRINT ─── */
+@media print{body{background:#fff;color:#000}.navbar,canvas,.btn{display:none!important}.card{border:1px solid #ddd;background:#f8f8f8;backdrop-filter:none}.big-code{color:#000;text-shadow:none}}
+
+/* ─── MOBILE ─── */
+@media(max-width:768px){
+  .hamburger{display:block}
+  .sidebar{position:fixed;left:-260px;top:60px;bottom:0;z-index:900;width:240px;background:rgba(5,6,15,.98);transition:left .3s}
+  .sidebar.open{left:0;box-shadow:10px 0 40px rgba(0,0,0,.5)}
+  .admin-shell{flex-direction:column}
+  .admin-content{padding:16px}
+  .countdown .num{font-size:1.6rem}
+  .hero h1{font-size:3.5rem}
+  .hero-sub{letter-spacing:4px}
+}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+
+<nav class="navbar">
+  <span class="nav-logo" onclick="navigate('landing')">⚡ QUIZ MANIA</span>
+  <div class="nav-right">
+    <span class="nav-user" id="navUser"></span>
+    <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()" style="display:none">☰</button>
+    <button class="btn btn-outline btn-sm" id="navAuthBtn" onclick="navigate('player-login')">Login</button>
+  </div>
+</nav>
+
+<div class="toast-container" id="toasts"></div>
+<div class="modal-overlay" id="modalOverlay"><div class="modal" id="modalBox"></div></div>
+
+<!-- ═══════════ LANDING ═══════════ -->
+<div class="page active" id="page-landing">
+  <div class="container">
+    <div class="hero">
+      <div class="hero-badge"><span class="hero-dot"></span> INNOVEX 2.0 — LIVE EVENT</div>
+      <h1>QUIZ MANIA</h1>
+      <div class="hero-sub">TECHNICAL QUIZ</div>
+      <p class="hero-detail">Dept. of Computer Science &nbsp;·&nbsp; Bengaluru City University</p>
+      <p class="hero-detail" style="margin-top:4px">April 17–18, 2026</p>
+      <div class="hero-divider"></div>
+      <div class="countdown" id="countdown"></div>
+      <div class="cta-buttons">
+        <button class="btn btn-neon" onclick="navigate('register')">Register Now →</button>
+        <button class="btn btn-violet" onclick="navigate('player-login')">Login</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section-head">
+      <h2>EVENT GUIDELINES</h2>
+      <p>Read carefully before participating</p>
+    </div>
+    <div class="guidelines-grid">
+      <div class="guideline-item"><div class="guideline-icon">👥</div><div class="guideline-text">Teams of 2–3 members maximum</div></div>
+      <div class="guideline-item"><div class="guideline-icon">🎯</div><div class="guideline-text">4 Rounds: Preliminary → Visual → Buzzer → Finale</div></div>
+      <div class="guideline-item"><div class="guideline-icon">⏱️</div><div class="guideline-text">Time limits will be announced on the spot</div></div>
+      <div class="guideline-item"><div class="guideline-icon">📱</div><div class="guideline-text">Bring your phone or laptop for the Preliminary round</div></div>
+      <div class="guideline-item"><div class="guideline-icon">⚠️</div><div class="guideline-text">Plagiarism results in immediate disqualification</div></div>
+      <div class="guideline-item"><div class="guideline-icon">🔑</div><div class="guideline-text">Keep your access code safe — required for login</div></div>
+    </div>
+
+    <div class="section-head" style="margin-top:50px">
+      <h2>HOW TO PLAY</h2>
+    </div>
+    <div class="steps-row">
+      <div class="card step-card"><span class="step-num">01</span><h4>Register</h4><p>Sign up with your team details and receive a unique access code</p></div>
+      <div class="card step-card"><span class="step-num">02</span><h4>Login</h4><p>Use your unique access code to enter the quiz dashboard</p></div>
+      <div class="card step-card"><span class="step-num">03</span><h4>Compete</h4><p>Answer timed questions across multiple rounds</p></div>
+      <div class="card step-card"><span class="step-num">04</span><h4>Win</h4><p>Top teams advance to the Finale for ultimate glory 🏆</p></div>
+    </div>
+
+    <footer>⚡ QUIZ MANIA — INNOVEX 2.0 © 2026 &nbsp;·&nbsp; Bengaluru City University &nbsp;·&nbsp; Dept. of Computer Science</footer>
+  </div>
+</div>
+
+<!-- ═══════════ REGISTER ═══════════ -->
+<div class="page" id="page-register">
+  <div class="container">
+    <div class="auth-wrap">
+      <div class="auth-header">
+        <h2>REGISTER</h2>
+        <p>One registration per team member</p>
+      </div>
+      <div class="card" id="regFormCard">
+        <div class="form-group"><label>Full Name</label><input id="regName" placeholder="Your full name" required></div>
+        <div class="form-group"><label>Phone Number</label><input id="regPhone" type="tel" placeholder="10-digit phone number" required></div>
+        <div class="form-group"><label>College Name</label><input id="regCollege" placeholder="Your college name" required></div>
+        <div class="form-group"><label>Team Name</label><input id="regTeam" placeholder="Choose a team name" required></div>
+        <button class="btn btn-neon" style="width:100%;justify-content:center;padding:13px" onclick="registerPlayer()">Register →</button>
+      </div>
+      <div class="card code-reveal" id="regResult" style="display:none">
+        <div style="color:var(--success);font-size:2rem;margin-bottom:12px">✓</div>
+        <h3 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;margin-bottom:6px">REGISTERED!</h3>
+        <p style="color:var(--text-dim);font-size:.83rem;margin-bottom:20px">Your unique access code</p>
+        <div class="big-code" id="regCode"></div>
+        <p class="note">⚠ Save this code — you'll need it to login</p>
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap">
+          <button class="btn btn-outline btn-sm" onclick="window.print()">Print Code</button>
+          <button class="btn btn-violet btn-sm" onclick="navigate('player-login')">Go to Login →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ PLAYER LOGIN ═══════════ -->
+<div class="page" id="page-player-login">
+  <div class="container">
+    <div class="auth-wrap">
+      <div class="auth-header"><h2>PLAYER LOGIN</h2><p>Enter your access code to join the quiz</p></div>
+      <div class="card">
+        <div class="form-group"><label>Access Code</label><input id="loginCode" placeholder="e.g. QM-X4K2" style="font-family:var(--font-mono);text-transform:uppercase;letter-spacing:3px"></div>
+        <button class="btn btn-neon" style="width:100%;justify-content:center;padding:13px" onclick="playerLogin()">Login →</button>
+        <p style="text-align:center;margin-top:16px;font-size:.82rem;color:var(--text-dim)">No account? <a href="#" style="color:var(--neon);text-decoration:none" onclick="navigate('register')">Register here</a></p>
+      </div>
+      <div style="text-align:center;margin-top:16px">
+        <button class="btn btn-outline btn-sm" onclick="navigate('admin-login')">Admin Login</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ ADMIN LOGIN ═══════════ -->
+<div class="page" id="page-admin-login">
+  <div class="container">
+    <div class="auth-wrap">
+      <div class="auth-header"><h2>ADMIN LOGIN</h2><p>Quizmaster access only</p></div>
+      <div class="card">
+        <div class="form-group"><label>Username</label><input id="adminUser" placeholder="Admin username"></div>
+        <div class="form-group"><label>Password</label><input id="adminPass" type="password" placeholder="Password"></div>
+        <button class="btn btn-violet" style="width:100%;justify-content:center;padding:13px" onclick="adminLogin()">Login as Admin →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ PLAYER DASHBOARD ═══════════ -->
+<div class="page" id="page-player-dash">
+  <div class="container">
+    <div class="dash-header">
+      <div class="dash-info">
+        <h2 id="dashWelcome">Welcome!</h2>
+        <span id="dashTeam"></span>
+      </div>
+      <span class="round-badge badge-inactive" id="dashRoundStatus">Loading…</span>
+    </div>
+    <div id="dashContent"></div>
+    <div id="quizArea" style="display:none"></div>
+    <div style="margin-top:36px">
+      <h3 style="font-family:var(--font-head);font-size:1.5rem;letter-spacing:2px;margin-bottom:16px">🏆 LEADERBOARD</h3>
+      <div class="table-wrap">
+        <table id="playerLeaderboard">
+          <thead><tr><th>#</th><th>Team</th><th>Score</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ ADMIN DASHBOARD ═══════════ -->
+<div class="page" id="page-admin-dash">
+  <div class="admin-shell">
+    <div class="sidebar" id="adminSidebar">
+      <div class="sidebar-logo">QUIZMASTER</div>
+      <a href="#" class="active" onclick="showAdminTab('players',this)"><span class="s-icon">👥</span>Players</a>
+      <a href="#" onclick="showAdminTab('rounds',this)"><span class="s-icon">🎯</span>Rounds</a>
+      <a href="#" onclick="showAdminTab('questions',this)"><span class="s-icon">❓</span>Questions</a>
+      <a href="#" onclick="showAdminTab('leaderboard',this)"><span class="s-icon">🏆</span>Leaderboard</a>
+      <a href="#" onclick="showAdminTab('settings',this)"><span class="s-icon">⚙️</span>Settings</a>
+    </div>
+    <div class="admin-content">
+
+      <!-- Players Tab -->
+      <div class="admin-tab active" id="tab-players">
+        <div class="admin-tab-head">
+          <h2>PLAYERS</h2>
+          <button class="btn btn-outline btn-sm" onclick="exportCSV()">Export CSV ↓</button>
+        </div>
+        <div class="stats-row" id="playerStats"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+          <input class="search-bar" id="playerSearch" placeholder="Search by name or college…" oninput="renderPlayersTable()" style="max-width:280px">
+        </div>
+        <div class="table-wrap">
+          <table id="playersTable">
+            <thead><tr><th>Name</th><th>Phone</th><th>College</th><th>Team</th><th>Code</th><th>Score</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Rounds Tab -->
+      <div class="admin-tab" id="tab-rounds">
+        <div class="admin-tab-head"><h2>ROUNDS</h2></div>
+        <p style="color:var(--text-dim);font-size:.84rem;margin-bottom:20px">Only one round can be active at a time.</p>
+        <div class="rounds-grid" id="roundsGrid"></div>
+      </div>
+
+      <!-- Questions Tab -->
+      <div class="admin-tab" id="tab-questions">
+        <div class="admin-tab-head">
+          <h2>QUESTIONS</h2>
+          <button class="btn btn-neon btn-sm" onclick="showAddQuestionModal()">+ Add Question</button>
+        </div>
+        <div class="filter-row">
+          <select id="filterRound" onchange="renderQuestions()"><option value="">All Rounds</option><option>Preliminary</option><option>Visual</option><option>Buzzer</option><option>Finale</option></select>
+          <select id="filterCat" onchange="renderQuestions()"><option value="">All Categories</option><option>Science & Tech</option><option>General Knowledge</option><option>Logical Reasoning</option><option>Current Affairs</option><option>Rapid Fire</option></select>
+        </div>
+        <div id="questionsList"></div>
+      </div>
+
+      <!-- Leaderboard Tab -->
+      <div class="admin-tab" id="tab-leaderboard">
+        <div class="admin-tab-head">
+          <h2>LEADERBOARD</h2>
+          <button class="btn btn-neon btn-sm" onclick="showAdvanceModal()">⚡ Advance Teams</button>
+        </div>
+        <div class="bar-chart" id="barChart"></div>
+        <div class="table-wrap">
+          <table id="adminLeaderboard">
+            <thead><tr><th>#</th><th>Team</th><th>Score</th><th>Status (Current Round)</th><th>Adjust</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Settings Tab -->
+      <div class="admin-tab" id="tab-settings">
+        <div class="admin-tab-head"><h2>SETTINGS</h2></div>
+        <div class="card" style="margin-bottom:16px">
+          <h3 style="font-family:var(--font-head);font-size:1.2rem;letter-spacing:1px;margin-bottom:14px;color:var(--text-dim)">EVENT INFO</h3>
+          <div style="display:grid;gap:8px;font-size:.85rem;color:var(--text-mid);line-height:2">
+            <span><span style="color:var(--text-dim);font-size:.7rem;text-transform:uppercase;letter-spacing:1px">Event</span><br>Quiz Mania — Technical Quiz</span>
+            <span><span style="color:var(--text-dim);font-size:.7rem;text-transform:uppercase;letter-spacing:1px">Part of</span><br>INNOVEX 2.0 — 2026</span>
+            <span><span style="color:var(--text-dim);font-size:.7rem;text-transform:uppercase;letter-spacing:1px">Date</span><br>April 17–18, 2026</span>
+            <span><span style="color:var(--text-dim);font-size:.7rem;text-transform:uppercase;letter-spacing:1px">Hosted by</span><br>Dept. of Computer Science, Bengaluru City University</span>
+          </div>
+        </div>
+        <div class="card card-violet">
+          <h3 style="font-family:var(--font-head);font-size:1.2rem;letter-spacing:1px;margin-bottom:12px;color:var(--warning)">⚠ DANGER ZONE</h3>
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <button class="btn btn-danger btn-sm" onclick="confirmAction('Reset all scores to zero?',resetScores)">Reset All Scores</button>
+            <button class="btn btn-danger btn-sm" onclick="confirmAction('Clear ALL registrations? This cannot be undone!',clearAllData)">Clear All Registrations</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ BUZZER MODE OVERLAY ═══════════ -->
+<div class="buzzer-overlay" id="buzzerOverlay">
+  <div class="buzzer-top">
+    <h3>🔔 BUZZER ROUND</h3>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span id="buzzerQCount" style="font-family:var(--font-mono);font-size:.8rem;color:var(--text-dim)"></span>
+      <button class="btn btn-outline btn-sm" onclick="closeBuzzerMode()">✕ Exit</button>
+    </div>
+  </div>
+  <div class="buzzer-body">
+    <div class="buzzer-main" id="buzzerMain">
+      <div class="buzzer-waiting" id="buzzerWaiting">READY</div>
+    </div>
+    <div class="buzzer-sidebar" id="buzzerSidebar">
+      <div class="buzzer-sb-title">LIVE SCORES</div>
+      <div id="buzzerScoreboard"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ FINALE MODE OVERLAY ═══════════ -->
+<div class="finale-overlay" id="finaleOverlay">
+  <div class="finale-top">
+    <h3>🏆 THE GRAND FINALE</h3>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span id="finaleQCount" style="font-family:var(--font-mono);font-size:.8rem;color:var(--text-dim)"></span>
+      <button class="btn btn-outline btn-sm" onclick="closeFinaleMode()">✕ Exit</button>
+    </div>
+  </div>
+  <div class="finale-body" id="finaleBody">
+  </div>
+</div>
+
+<footer style="position:relative;z-index:1;text-align:center;padding:30px 16px;border-top:1px solid var(--glass-border);color:var(--text-dim);font-size:.75rem;margin-top:60px;letter-spacing:.5px">⚡ QUIZ MANIA — INNOVEX 2.0 © 2026 &nbsp;·&nbsp; Bengaluru City University &nbsp;·&nbsp; Dept. of Computer Science</footer>
+
+<!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<!-- Add the Realtime Database product -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script>
+/* ─── ANTI-CHEAT & SECURITY ─── */
+(function(){
+  // Prevent Right Click
+  document.addEventListener('contextmenu', e=>e.preventDefault());
+  // Prevent f12, Ctrl+Shift+I, Ctrl+U
+  document.addEventListener('keydown', e=>{
+    if(e.keyCode===123)e.preventDefault(); // F12
+    if(e.ctrlKey&&e.shiftKey&&(e.keyCode===73||e.keyCode===74||e.keyCode===67))e.preventDefault(); // I, J, C
+    if(e.ctrlKey&&e.keyCode===85)e.preventDefault(); // U
+  });
+  // Aggressive debugger loop (crashes DevTools if opened)
+  setInterval(()=>{
+    const before=new Date().getTime();
+    debugger;
+    if(new Date().getTime()-before>100){
+      document.body.innerHTML='<div style="padding:50px;text-align:center;color:red;font-size:2rem;font-weight:bold;background:#000;height:100vh">SECURITY VIOLATION DETECTED.</div>';
+    }
+  }, 100);
+})();
+
+/* ─── ANIMATED BG ─── */
+(function(){
+  const c=document.getElementById('bg'),x=c.getContext('2d');
+  let w,h,pts=[];
+  function resize(){w=c.width=innerWidth;h=c.height=innerHeight;
+    pts=Array.from({length:80},()=>({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.25,vy:(Math.random()-.5)*.25,r:Math.random()*1.2+.4,a:Math.random()*Math.PI*2}))}
+  function draw(){
+    x.clearRect(0,0,w,h);
+    pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.a+=.008;
+      if(p.x<0)p.x=w;if(p.x>w)p.x=0;if(p.y<0)p.y=h;if(p.y>h)p.y=0;
+      x.beginPath();x.arc(p.x,p.y,p.r,0,Math.PI*2);
+      x.fillStyle=`rgba(0,245,255,${.15+Math.sin(p.a)*.1})`;x.fill()});
+    // connect nearby
+    for(let i=0;i<pts.length;i++){for(let j=i+1;j<pts.length;j++){
+      const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,dist=Math.sqrt(dx*dx+dy*dy);
+      if(dist<120){x.beginPath();x.moveTo(pts[i].x,pts[i].y);x.lineTo(pts[j].x,pts[j].y);
+        x.strokeStyle=`rgba(0,245,255,${.06*(1-dist/120)})`;x.lineWidth=.5;x.stroke()}}}
+    requestAnimationFrame(draw)}
+  resize();draw();addEventListener('resize',resize)
+})();
+
+/* ─── TOAST ─── */
+function toast(msg,type='info'){
+  const t=document.createElement('div');t.className='toast toast-'+type;
+  t.innerHTML=`<span>${type==='success'?'✓':type==='error'?'✗':'ℹ'}</span>${msg}`;
+  document.getElementById('toasts').appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(110%)';t.style.transition='all .3s';setTimeout(()=>t.remove(),300)},3200)}
+
+/* ─── CONFETTI ─── */
+function confetti(){
+  const colors=['#00f5ff','#7b2ff7','#ff2d78','#fbbf24','#10b981'];
+  for(let i=0;i<60;i++){const p=document.createElement('div');p.className='confetti-piece';
+    p.style.cssText=`left:${Math.random()*100}%;background:${colors[i%5]};width:${6+Math.random()*8}px;height:${6+Math.random()*8}px;animation-delay:${Math.random()*1.5}s;animation-duration:${2+Math.random()*1.5}s`;
+    document.body.appendChild(p);setTimeout(()=>p.remove(),4000)}}
+
+/* ─── MODAL ─── */
+function showModal(html){const o=document.getElementById('modalOverlay'),b=document.getElementById('modalBox');b.innerHTML=html;o.classList.add('active');o.onclick=e=>{if(e.target===o)closeModal()}}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('active')}
+
+/* ─── FIREBASE REALTIME SYNC LAYER ─── */
+// INSTRUCTIONS: Paste your Firebase config object here.
+const firebaseConfig = {
+  apiKey: "AIzaSyDw3O41I3b4yFqKsEnwK1rBvHuBKbp2a0M",
+  authDomain: "qiuz-275e1.firebaseapp.com",
+  databaseURL: "https://qiuz-275e1-default-rtdb.firebaseio.com",
+  projectId: "qiuz-275e1",
+  storageBucket: "qiuz-275e1.firebasestorage.app",
+  messagingSenderId: "868229606672",
+  appId: "1:868229606672:web:e5ef4164ecee634f004995",
+  measurementId: "G-M94GV6Q25Y"
+};
+
+let db = null;
+try {
+  if(firebaseConfig.apiKey !== "YOUR_API_KEY" && typeof firebase !== 'undefined') {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+  }
+} catch(e) { console.error("Firebase init error", e); }
+
+/* ─── DATA STORE LAYER ─── */
+const LS={get:k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
+
+const Memory = {};
+const Sync = {
+  get: (k, defaultVal) => {
+    return Memory[k] !== undefined ? Memory[k] : (LS.get(k) || defaultVal);
+  },
+  set: (k, v) => {
+    Memory[k] = v;
+    LS.set(k, v);
+    if(db) db.ref(k).set(v);
+  },
+  init: () => {
+    if(!db) return;
+    const keys = ['quizmania_players', 'quizmania_questions', 'quizmania_scores', 'quizmania_rounds', 'quizmania_active_round', 'quizmania_qualifications'];
+    keys.forEach(k => {
+      db.ref(k).on('value', snap => {
+        const val = snap.val();
+        if(val) {
+          Memory[k] = val;
+          LS.set(k, val);
+          if(typeof window.onSyncUpdate === 'function') window.onSyncUpdate(k);
+        }
+      });
+    });
+  }
+};
+
+function getPlayers(){return Sync.get('quizmania_players', [])}
+function savePlayers(p){Sync.set('quizmania_players',p)}
+function getQuestions(){return Sync.get('quizmania_questions', [])}
+function saveQuestions(q){Sync.set('quizmania_questions',q)}
+function getScores(){return Sync.get('quizmania_scores', {})}
+function saveScores(s){Sync.set('quizmania_scores',s)}
+function getRounds(){return Sync.get('quizmania_rounds', {Preliminary:'inactive',Visual:'inactive',Buzzer:'inactive',Finale:'inactive'})}
+function saveRounds(r){Sync.set('quizmania_rounds',r)}
+function getActiveRound(){return Sync.get('quizmania_active_round', '')}
+function setActiveRound(r){Sync.set('quizmania_active_round',r)}
+function getQualifications(){return Sync.get('quizmania_qualifications', {})}
+function saveQualifications(q){Sync.set('quizmania_qualifications',q)}
+
+let currentPlayer=null,isAdmin=false,quizState=null;
+
+window.onSyncUpdate = (k) => {
+  if (k === 'quizmania_active_round' || k === 'quizmania_rounds' || k === 'quizmania_players' || k === 'quizmania_qualifications') {
+    if(isAdmin) {
+      if(document.getElementById('admin-dash').classList.contains('active')) renderAdminLeaderboard();
+    }
+    if(!isAdmin && currentPlayer && quizState === null) {
+      if(document.getElementById('player-dash').classList.contains('active')) loadPlayerDash();
+    }
+  }
+};
+
+// Initialize listeners globally
+Sync.init();
+
+/* ─── COUNTDOWN ─── */
+function updateCountdown(){
+  const target=new Date('2026-04-17T09:00:00+05:30').getTime(),now=Date.now(),d=target-now;
+  if(d<=0){document.getElementById('countdown').innerHTML='<p style="color:var(--neon);font-size:1.1rem;font-weight:600;font-family:var(--font-head);letter-spacing:3px">🎉 EVENT HAS STARTED!</p>';return}
+  const days=Math.floor(d/864e5),hrs=Math.floor(d%864e5/36e5),mins=Math.floor(d%36e5/6e4),secs=Math.floor(d%6e4/1e3);
+  document.getElementById('countdown').innerHTML=
+    `<div class="unit"><span class="num">${days}</span><span class="lbl">Days</span></div>
+     <div class="unit"><span class="num">${String(hrs).padStart(2,'0')}</span><span class="lbl">Hours</span></div>
+     <div class="unit"><span class="num">${String(mins).padStart(2,'0')}</span><span class="lbl">Mins</span></div>
+     <div class="unit"><span class="num">${String(secs).padStart(2,'0')}</span><span class="lbl">Secs</span></div>`}
+updateCountdown();setInterval(updateCountdown,1000);
+
+/* ─── NAVIGATION ─── */
+function navigate(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const el=document.getElementById('page-'+page);if(el)el.classList.add('active');
+  const btn=document.getElementById('navAuthBtn'),hb=document.getElementById('hamburgerBtn');
+  if(page==='admin-dash'){btn.textContent='Logout';btn.onclick=()=>{isAdmin=false;LS.set('quizmania_session',null);navigate('landing');toast('Logged out','info')};hb.style.display='inline-block';renderPlayersTable();renderRoundsGrid();renderQuestions();renderAdminLeaderboard()}
+  else if(page==='player-dash'){btn.textContent='Logout';btn.onclick=()=>{currentPlayer=null;LS.set('quizmania_session',null);navigate('landing');toast('Logged out','info')};hb.style.display='none';loadPlayerDash()}
+  else{btn.textContent='Login';btn.onclick=()=>navigate('player-login');hb.style.display='none';document.getElementById('navUser').textContent=''}
+  if(page==='register'){document.getElementById('regFormCard').style.display='block';document.getElementById('regResult').style.display='none'}
+  window.scrollTo(0,0)}
+
+function toggleSidebar(){document.getElementById('adminSidebar').classList.toggle('open')}
+function showAdminTab(tab,el){
+  document.querySelectorAll('.admin-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.querySelectorAll('.sidebar a').forEach(a=>a.classList.remove('active'));
+  if(el)el.classList.add('active');
+  if(tab==='leaderboard')renderAdminLeaderboard();if(tab==='players')renderPlayersTable();if(tab==='questions')renderQuestions();if(tab==='rounds')renderRoundsGrid();
+  document.getElementById('adminSidebar').classList.remove('open')}
+
+/* ─── REGISTRATION ─── */
+function genCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let r='QM-';for(let i=0;i<4;i++)r+=c[Math.floor(Math.random()*c.length)];return r}
+function registerPlayer(){
+  const name=document.getElementById('regName').value.trim(),phone=document.getElementById('regPhone').value.trim(),college=document.getElementById('regCollege').value.trim(),team=document.getElementById('regTeam').value.trim();
+  if(!name||!phone||!college||!team){toast('Please fill all fields','error');return}
+  if(!/^\d{10}$/.test(phone)){toast('Enter a valid 10-digit phone number','error');return}
+  const players=getPlayers();if(players.find(p=>p.phone===phone)){toast('This phone number is already registered','error');return}
+  let code;do{code=genCode()}while(players.find(p=>p.code===code));
+  const player={name,phone,college,team,code,score:0,quizDone:false};players.push(player);savePlayers(players);
+  const scores=getScores();if(!scores[team])scores[team]=0;saveScores(scores);
+  document.getElementById('regFormCard').style.display='none';document.getElementById('regResult').style.display='block';
+  document.getElementById('regCode').textContent=code;toast('Registration successful!','success')}
+
+/* ─── LOGIN ─── */
+function playerLogin(){
+  const code=document.getElementById('loginCode').value.trim().toUpperCase();
+  if(!code){toast('Enter your access code','error');return}
+  const player=getPlayers().find(p=>p.code===code);
+  if(!player){toast('Invalid access code','error');return}
+  currentPlayer=player;isAdmin=false;LS.set('quizmania_session',{type:'player',code:player.code});document.getElementById('navUser').textContent=player.name;toast('Welcome back, '+player.name+'!','success');navigate('player-dash')}
+
+function adminLogin(){
+  const u=document.getElementById('adminUser').value.trim(),p=document.getElementById('adminPass').value;
+  if(u==='quizmaster'&&p==='innovex2026'){isAdmin=true;currentPlayer=null;LS.set('quizmania_session',{type:'admin'});document.getElementById('navUser').textContent='🛡 Quizmaster';toast('Admin access granted','success');navigate('admin-dash')}
+  else{toast('Invalid admin credentials','error')}}
+
+/* ─── DEFAULT QUESTIONS ─── */
+const DEFAULT_QUESTIONS=[
+  {
+    q: "What does CPU stand for?",
+    options: [
+      "Central Processing Unit",
+      "Central Program Utility",
+      "Computer Personal Unit",
+      "Central Processor Unifier"
+    ],
+    category: "Science & Tech",
+    round: "Preliminary",
+    difficulty: "Easy",
+    answerHash: "258356120"
+  },
+  {
+    q: "Which programming language was developed by Guido van Rossum?",
+    options: [
+      "Java",
+      "C++",
+      "Python",
+      "Ruby"
+    ],
+    category: "Science & Tech",
+    round: "Preliminary",
+    difficulty: "Easy",
+    answerHash: "849858030"
+  },
+  {
+    q: "What is the time complexity of binary search?",
+    options: [
+      "O(n)",
+      "O(log n)",
+      "O(n²)",
+      "O(1)"
+    ],
+    category: "Science & Tech",
+    round: "Preliminary",
+    difficulty: "Medium",
+    answerHash: "1144887746"
+  },
+  {
+    q: "Which company developed the Transformer architecture used in modern AI?",
+    options: [
+      "OpenAI",
+      "Meta",
+      "Google",
+      "Microsoft"
+    ],
+    category: "Science & Tech",
+    round: "Preliminary",
+    difficulty: "Medium",
+    answerHash: "1492834251"
+  },
+  {
+    q: "In machine learning, what does 'overfitting' mean?",
+    options: [
+      "Model performs well on all data",
+      "Model memorizes training data but fails on new data",
+      "Model is too simple",
+      "Model has too few parameters"
+    ],
+    category: "Science & Tech",
+    round: "Preliminary",
+    difficulty: "Hard",
+    answerHash: "941891843"
+  },
+  {
+    q: "Who is known as the father of computer science?",
+    options: [
+      "Charles Babbage",
+      "Alan Turing",
+      "John von Neumann",
+      "Ada Lovelace"
+    ],
+    category: "General Knowledge",
+    round: "Preliminary",
+    difficulty: "Easy",
+    answerHash: "-883256021"
+  },
+  {
+    q: "In what year was the World Wide Web invented?",
+    options: [
+      "1985",
+      "1989",
+      "1993",
+      "1995"
+    ],
+    category: "General Knowledge",
+    round: "Preliminary",
+    difficulty: "Medium",
+    answerHash: "881522843"
+  },
+  {
+    q: "Which company was originally called 'Blue Ribbon Sports'?",
+    options: [
+      "Adidas",
+      "Puma",
+      "Nike",
+      "Reebok"
+    ],
+    category: "General Knowledge",
+    round: "Preliminary",
+    difficulty: "Medium",
+    answerHash: "-1729540121"
+  },
+  {
+    q: "Who co-founded Apple Inc. along with Steve Jobs?",
+    options: [
+      "Bill Gates",
+      "Steve Wozniak",
+      "Tim Cook",
+      "Larry Page"
+    ],
+    category: "General Knowledge",
+    round: "Preliminary",
+    difficulty: "Easy",
+    answerHash: "1624259372"
+  },
+  {
+    q: "What does 'HTTP' stand for?",
+    options: [
+      "HyperText Transfer Protocol",
+      "High Tech Transfer Protocol",
+      "HyperText Transmission Process",
+      "Home Tool Transfer Protocol"
+    ],
+    category: "General Knowledge",
+    round: "Preliminary",
+    difficulty: "Easy",
+    answerHash: "497772120"
+  },
+  {
+    q: "What comes next in the sequence: 2, 6, 12, 20, 30, ?",
+    options: [
+      "40",
+      "42",
+      "44",
+      "36"
+    ],
+    category: "Logical Reasoning",
+    round: "Preliminary",
+    difficulty: "Medium",
+    answerHash: "-122125200"
+  },
+  {
+    q: "If all Bloops are Razzles and all Razzles are Lazzles, then all Bloops are definitely Lazzles. True or False?",
+    options: [
+      "True",
+      "False",
+      "Cannot be determined",
+      "Depends on context"
+    ],
+    category: "Logical Reasoning",
+    round: "Preliminary",
+    difficulty: "Easy",
+    answerHash: "-575332448"
+  },
+  {
+    q: "What is the output of: print(type(lambda:None))?",
+    options: [
+      "<class 'NoneType'>",
+      "<class 'function'>",
+      "<class 'lambda'>",
+      "Error"
+    ],
+    category: "Logical Reasoning",
+    round: "Preliminary",
+    difficulty: "Hard",
+    answerHash: "584883908"
+  },
+  {
+    q: "In a binary tree with n nodes, what is the maximum number of leaf nodes?",
+    options: [
+      "n/2",
+      "(n+1)/2",
+      "n-1",
+      "n"
+    ],
+    category: "Logical Reasoning",
+    round: "Preliminary",
+    difficulty: "Hard",
+    answerHash: "1179240978"
+  },
+  {
+    q: "Which number replaces '?' : 1, 1, 2, 3, 5, 8, ?",
+    options: [
+      "11",
+      "12",
+      "13",
+      "15"
+    ],
+    category: "Logical Reasoning",
+    round: "Preliminary",
+    difficulty: "Easy",
+    answerHash: "1101147668"
+  },
+  {
+    q: "Which AI model introduced the concept of 'Chain of Thought' prompting?",
+    options: [
+      "GPT-3",
+      "PaLM",
+      "Claude",
+      "LLaMA"
+    ],
+    category: "Current Affairs",
+    round: "Preliminary",
+    difficulty: "Hard",
+    answerHash: "-686967996"
+  },
+  {
+    q: "What is the name of India's indigenously developed quantum computer initiative?",
+    options: [
+      "Quantum India",
+      "National Quantum Mission",
+      "IndiaQ",
+      "Quantum Bharat"
+    ],
+    category: "Current Affairs",
+    round: "Preliminary",
+    difficulty: "Medium",
+    answerHash: "533886059"
+  },
+  {
+    q: "Which company released the Gemini family of AI models?",
+    options: [
+      "OpenAI",
+      "Anthropic",
+      "Google DeepMind",
+      "Meta AI"
+    ],
+    category: "Current Affairs",
+    round: "Preliminary",
+    difficulty: "Easy",
+    answerHash: "1285105879"
+  },
+  {
+    q: "SpaceX's Starship is designed primarily for missions to which planet?",
+    options: [
+      "Moon",
+      "Jupiter",
+      "Mars",
+      "Venus"
+    ],
+    category: "Current Affairs",
+    round: "Preliminary",
+    difficulty: "Easy",
+    answerHash: "548863591"
+  },
+  {
+    q: "What programming language powers most smart contracts on Ethereum?",
+    options: [
+      "Rust",
+      "Solidity",
+      "Go",
+      "Python"
+    ],
+    category: "Current Affairs",
+    round: "Preliminary",
+    difficulty: "Medium",
+    answerHash: "-670347083"
+  },
+  {
+    q: "Identify the data structure shown in this diagram:",
+    image: "images/visual_q1.png",
+    options: [
+      "AVL Tree",
+      "Binary Search Tree",
+      "Heap",
+      "Red-Black Tree"
+    ],
+    category: "Science & Tech",
+    round: "Visual",
+    difficulty: "Medium",
+    answerHash: "1673035273"
+  },
+  {
+    q: "What algorithm is being visualized in this diagram?",
+    image: "images/visual_q2.png",
+    options: [
+      "Merge Sort",
+      "Quick Sort",
+      "Bubble Sort",
+      "Insertion Sort"
+    ],
+    category: "Science & Tech",
+    round: "Visual",
+    difficulty: "Medium",
+    answerHash: "-1011215196"
+  },
+  {
+    q: "Identify the logic gate shown in this circuit diagram:",
+    image: "images/visual_q3.png",
+    options: [
+      "OR Gate",
+      "NAND Gate",
+      "AND Gate",
+      "XOR Gate"
+    ],
+    category: "Science & Tech",
+    round: "Visual",
+    difficulty: "Easy",
+    answerHash: "1440352934"
+  },
+  {
+    q: "What networking model is depicted in this diagram?",
+    image: "images/visual_q4.png",
+    options: [
+      "TCP/IP Model",
+      "OSI Model",
+      "Internet Protocol Stack",
+      "Client-Server Model"
+    ],
+    category: "Science & Tech",
+    round: "Visual",
+    difficulty: "Easy",
+    answerHash: "-1654228992"
+  },
+  {
+    q: "What will be the output of the code shown in the image?",
+    image: "images/visual_q5.png",
+    options: [
+      "[1, 2, 3, 4]",
+      "[2, 3, 4]",
+      "[2, 3, 4, 5]",
+      "[1, 2, 3]"
+    ],
+    category: "Logical Reasoning",
+    round: "Visual",
+    difficulty: "Medium",
+    answerHash: "-1097763529"
+  },
+  {
+    q: "Identify the tech company from this logo:",
+    image: "images/visual_q6.png",
+    options: [
+      "Samsung",
+      "Apple",
+      "Huawei",
+      "OnePlus"
+    ],
+    category: "General Knowledge",
+    round: "Visual",
+    difficulty: "Easy",
+    answerHash: "1615320876"
+  },
+  {
+    q: "Which company does this logo belong to?",
+    image: "images/visual_q7.png",
+    options: [
+      "Google",
+      "Microsoft",
+      "IBM",
+      "Intel"
+    ],
+    category: "General Knowledge",
+    round: "Visual",
+    difficulty: "Easy",
+    answerHash: "-1252010304"
+  },
+  {
+    q: "What type of diagram is shown in this image?",
+    image: "images/visual_q8.png",
+    options: [
+      "UML Class Diagram",
+      "Flowchart",
+      "Entity-Relationship Diagram",
+      "Data Flow Diagram"
+    ],
+    category: "Science & Tech",
+    round: "Visual",
+    difficulty: "Medium",
+    answerHash: "1960468967"
+  },
+  {
+    q: "Identify the programming language from this logo:",
+    image: "images/visual_q9.png",
+    options: [
+      "Java",
+      "Anaconda",
+      "Python",
+      "Cobra"
+    ],
+    category: "General Knowledge",
+    round: "Visual",
+    difficulty: "Easy",
+    answerHash: "849858030"
+  },
+  {
+    q: "What cloud computing concept is shown in this architecture diagram?",
+    image: "images/visual_q10.png",
+    options: [
+      "Microservices Architecture",
+      "SaaS / PaaS / IaaS Service Models",
+      "Serverless Computing",
+      "Edge Computing"
+    ],
+    category: "Science & Tech",
+    round: "Visual",
+    difficulty: "Hard",
+    answerHash: "16352192"
+  },
+  {
+    q: "Which SQL command is used to retrieve data from a database?",
+    options: [
+      "GET",
+      "FETCH",
+      "SELECT",
+      "RETRIEVE"
+    ],
+    category: "Science & Tech",
+    round: "Buzzer",
+    difficulty: "Easy",
+    answerHash: "-1968907794"
+  },
+  {
+    q: "In HTML, what does the <a> tag stand for?",
+    options: [
+      "Align",
+      "Anchor",
+      "Attribute",
+      "Action"
+    ],
+    category: "Science & Tech",
+    round: "Buzzer",
+    difficulty: "Easy",
+    answerHash: "-164928953"
+  },
+  {
+    q: "Which data structure follows LIFO (Last In, First Out)?",
+    options: [
+      "Queue",
+      "Array",
+      "Stack",
+      "Linked List"
+    ],
+    category: "Science & Tech",
+    round: "Buzzer",
+    difficulty: "Easy",
+    answerHash: "-185876134"
+  },
+  {
+    q: "What is the default port number for HTTP?",
+    options: [
+      "21",
+      "25",
+      "80",
+      "443"
+    ],
+    category: "Science & Tech",
+    round: "Buzzer",
+    difficulty: "Medium",
+    answerHash: "-1557553686"
+  },
+  {
+    q: "In C programming, which function is used to allocate memory dynamically?",
+    options: [
+      "alloc()",
+      "malloc()",
+      "memalloc()",
+      "new()"
+    ],
+    category: "Science & Tech",
+    round: "Buzzer",
+    difficulty: "Medium",
+    answerHash: "276660059"
+  },
+  {
+    q: "What does CSS stand for?",
+    options: [
+      "Computer Style Sheets",
+      "Creative Style System",
+      "Cascading Style Sheets",
+      "Colorful Style Sheets"
+    ],
+    category: "Science & Tech",
+    round: "Buzzer",
+    difficulty: "Easy",
+    answerHash: "1143416292"
+  },
+  {
+    q: "Which normal form eliminates transitive dependency?",
+    options: [
+      "1NF",
+      "2NF",
+      "3NF",
+      "BCNF"
+    ],
+    category: "Science & Tech",
+    round: "Buzzer",
+    difficulty: "Hard",
+    answerHash: "1915857821"
+  },
+  {
+    q: "In Java, which keyword is used to inherit a class?",
+    options: [
+      "implements",
+      "inherits",
+      "extends",
+      "super"
+    ],
+    category: "Science & Tech",
+    round: "Buzzer",
+    difficulty: "Easy",
+    answerHash: "1375359499"
+  },
+  {
+    q: "What is the full form of URL?",
+    options: [
+      "Uniform Resource Locator",
+      "Universal Reference Link",
+      "Unified Resource Locator",
+      "Universal Resource Locator"
+    ],
+    category: "Science & Tech",
+    round: "Buzzer",
+    difficulty: "Easy",
+    answerHash: "832292482"
+  },
+  {
+    q: "Which operating system kernel is Linux based on?",
+    options: [
+      "Microkernel",
+      "Monolithic",
+      "Hybrid",
+      "Exokernel"
+    ],
+    category: "Science & Tech",
+    round: "Buzzer",
+    difficulty: "Hard",
+    answerHash: "-1105150912"
+  },
+  {
+    q: "In Python, what is the output of: print(2 ** 3)?",
+    options: [
+      "6",
+      "9",
+      "8",
+      "5"
+    ],
+    category: "Logical Reasoning",
+    round: "Buzzer",
+    difficulty: "Easy",
+    answerHash: "-1363298518"
+  },
+  {
+    q: "Which protocol is used to send emails?",
+    options: [
+      "FTP",
+      "SMTP",
+      "HTTP",
+      "POP3"
+    ],
+    category: "Science & Tech",
+    round: "Buzzer",
+    difficulty: "Medium",
+    answerHash: "1360420936"
+  },
+  {
+    q: "What does the 'B' in B-Tree stand for?",
+    options: [
+      "Binary",
+      "Balanced",
+      "Boeing",
+      "Block"
+    ],
+    category: "Science & Tech",
+    round: "Buzzer",
+    difficulty: "Hard",
+    answerHash: "-1719951334"
+  },
+  {
+    q: "In SQL, which clause is used to filter groups?",
+    options: [
+      "WHERE",
+      "FILTER",
+      "HAVING",
+      "GROUP BY"
+    ],
+    category: "Science & Tech",
+    round: "Buzzer",
+    difficulty: "Medium",
+    answerHash: "-1531358313"
+  },
+  {
+    q: "Which tag is used to create a numbered list in HTML?",
+    options: [
+      "<ul>",
+      "<nl>",
+      "<ol>",
+      "<li>"
+    ],
+    category: "Science & Tech",
+    round: "Buzzer",
+    difficulty: "Easy",
+    answerHash: "1672740791"
+  },
+  {
+    q: "What is the worst-case time complexity of Quick Sort?",
+    options: [
+      "O(n log n)",
+      "O(n²)",
+      "O(n)",
+      "O(log n)"
+    ],
+    category: "Science & Tech",
+    round: "Finale",
+    difficulty: "Hard",
+    answerHash: "-2134615234"
+  },
+  {
+    q: "In DBMS, what does ACID stand for?",
+    options: [
+      "Atomicity, Consistency, Isolation, Durability",
+      "Atomicity, Concurrency, Isolation, Durability",
+      "Availability, Consistency, Isolation, Durability",
+      "Atomicity, Consistency, Integrity, Durability"
+    ],
+    category: "Science & Tech",
+    round: "Finale",
+    difficulty: "Medium",
+    answerHash: "-980844600"
+  },
+  {
+    q: "Which layer of OSI model handles end-to-end encryption?",
+    options: [
+      "Network",
+      "Transport",
+      "Session",
+      "Presentation"
+    ],
+    category: "Science & Tech",
+    round: "Finale",
+    difficulty: "Hard",
+    answerHash: "-382363860"
+  },
+  {
+    q: "What is the output of: System.out.println(10 + 20 + \"Hello\" + 30 + 40); in Java?",
+    options: [
+      "1020Hello3040",
+      "30Hello3040",
+      "30Hello70",
+      "10 20 Hello 30 40"
+    ],
+    category: "Logical Reasoning",
+    round: "Finale",
+    difficulty: "Hard",
+    answerHash: "2127339904"
+  },
+  {
+    q: "Which scheduling algorithm gives the minimum average waiting time?",
+    options: [
+      "FCFS",
+      "Round Robin",
+      "Shortest Job First",
+      "Priority Scheduling"
+    ],
+    category: "Science & Tech",
+    round: "Finale",
+    difficulty: "Hard",
+    answerHash: "-1769893943"
+  }
+];
+function initQuestions(){
+  const defaults=DEFAULT_QUESTIONS.map((q,i)=>({id:'q'+i,...q}));
+  const existing=LS.get('quizmania_questions');
+  if(!existing || existing.length===0 || existing[0].answer!==undefined){
+    saveQuestions(defaults); // Force overwrite if old unhashed schema
+    return;
+  }
+  // Merge in any new defaults not already present
+  const ids=new Set(existing.map(q=>q.id));
+  let added=0;
+  defaults.forEach(dq=>{if(!ids.has(dq.id)){existing.push(dq);added++}});
+  if(added)saveQuestions(existing);
+}
+
+/* ─── PLAYER DASHBOARD ─── */
+function loadPlayerDash(){
+  if(!currentPlayer)return;
+  document.getElementById('dashWelcome').textContent='Welcome back, '+currentPlayer.name+'!';
+  document.getElementById('dashTeam').textContent='Team: '+currentPlayer.team+' · '+currentPlayer.college;
+  const ar=getActiveRound(),rs=document.getElementById('dashRoundStatus'),dc=document.getElementById('dashContent'),qa=document.getElementById('quizArea');
+  if(ar){rs.textContent=ar+' — Active';rs.className='round-badge badge-active'}
+  else{rs.textContent='No active round';rs.className='round-badge badge-inactive'}
+  const freshPlayer=getPlayers().find(p=>p.phone===currentPlayer.phone);if(freshPlayer)currentPlayer=freshPlayer;
+  const quals=getQualifications();
+  const isQualified = !ar || !quals[ar] || quals[ar].includes(currentPlayer.team);
+
+  if(!isQualified){
+    dc.innerHTML=`<div class="card card-glow" style="text-align:center;padding:36px 24px;border-color:rgba(244,63,94,.4);box-shadow:0 0 20px rgba(244,63,94,.1)">
+      <div style="font-size:2.5rem;margin-bottom:12px">☠</div>
+      <h3 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;color:var(--danger);margin-bottom:8px">ELIMINATED</h3>
+      <p style="color:var(--text-dim)">Thank you for participating! Your team did not advance to the ${ar} round.</p>
+      <p style="color:var(--text-dim);font-size:.8rem;margin-top:8px">Watch the live leaderboards below.</p></div>`;
+    qa.style.display='none'}
+  else if(ar==='Preliminary'&&!currentPlayer.quizDone){
+    dc.innerHTML=`<div class="card card-glow" style="text-align:center;padding:36px 24px">
+      <div style="font-size:2.5rem;margin-bottom:12px">🎯</div>
+      <h3 style="font-family:var(--font-head);font-size:1.8rem;letter-spacing:2px;color:var(--neon);margin-bottom:8px">PRELIMINARY ROUND IS LIVE!</h3>
+      <p style="color:var(--text-dim);margin-bottom:24px;font-size:.88rem">10 questions · 30 seconds each · No going back</p>
+      <button class="btn btn-neon" onclick="startQuiz()" style="padding:12px 32px;font-size:1rem">Start Quiz →</button></div>`;
+    qa.style.display='none'}
+  else if(ar==='Preliminary'&&currentPlayer.quizDone){
+    dc.innerHTML=`<div class="card card-glow" style="text-align:center;padding:36px 24px">
+      <div style="color:var(--success);font-size:2.5rem;margin-bottom:12px">✓</div>
+      <h3 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;color:var(--success);margin-bottom:8px">QUIZ COMPLETED</h3>
+      <span style="font-family:var(--font-mono);font-size:2.5rem;color:var(--neon)">${currentPlayer.score}</span>
+      <span style="display:block;color:var(--text-dim);font-size:.78rem;text-transform:uppercase;letter-spacing:1px;margin-top:4px">Your Score</span></div>`;
+    qa.style.display='none'}
+  else if(ar){
+    dc.innerHTML=`<div class="card" style="text-align:center;padding:32px">
+      <h3 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;margin-bottom:8px">${ar} ROUND</h3>
+      <p style="color:var(--text-dim);margin-top:8px">This round is managed by the quizmaster. Follow instructions on screen!</p></div>`;
+    qa.style.display='none'}
+  else{
+    dc.innerHTML=`<div class="card" style="text-align:center;padding:32px">
+      <div style="font-size:2rem;margin-bottom:12px">⏳</div>
+      <p style="color:var(--text-dim)">Round not started yet. Stay tuned!</p></div>`;
+    qa.style.display='none'}
+  renderPlayerLeaderboard()}
+
+function renderPlayerLeaderboard(){
+  const scores=getScores(),sorted=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+  const tbody=document.querySelector('#playerLeaderboard tbody');tbody.innerHTML='';
+  sorted.forEach(([team,score],i)=>{
+    const rankClass=i===0?'lb-rank-1':i===1?'lb-rank-2':i===2?'lb-rank-3':'';
+    const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1;
+    tbody.innerHTML+=`<tr class="${rankClass}"><td>${medal}</td><td>${team}</td><td class="mono" style="color:var(--neon)">${score}</td></tr>`})}
+
+/* ─── QUIZ ENGINE ─── */
+let quizTimer=null;
+function startQuiz(){
+  const questions=getQuestions().filter(q=>q.round==='Preliminary');
+  if(questions.length===0){toast('No questions available','error');return}
+  const shuffled=questions.sort(()=>Math.random()-.5).slice(0,10);
+  quizState={questions:shuffled,current:0,score:0,answers:[],selected:null};
+  document.getElementById('dashContent').style.display='none';document.getElementById('quizArea').style.display='block';renderQuestion()}
+
+function renderQuestion(){
+  if(!quizState)return;
+  const qa=document.getElementById('quizArea'),q=quizState.questions[quizState.current],total=quizState.questions.length,num=quizState.current+1;
+  quizState.selected=null;
+  const circ=2*Math.PI*30;
+  qa.innerHTML=`<div class="quiz-wrap">
+    <div class="quiz-meta"><span class="quiz-q-count">Question ${num} of ${total}</span></div>
+    <div class="progress-track"><div class="progress-fill" id="qProg" style="width:${num/total*100}%"></div></div>
+    <div class="timer-ring" id="timerRing">
+      <svg viewBox="0 0 72 72" width="72" height="72">
+        <circle class="track" cx="36" cy="36" r="30"/>
+        <circle class="fill" id="timerCircle" cx="36" cy="36" r="30" stroke-dasharray="${circ}" stroke-dashoffset="0"/>
+      </svg>
+      <div class="timer-num" id="qTimer">30</div>
+    </div>
+    <div class="card">
+      <p class="q-text">${q.q}</p>
+      ${q.image?`<img src="${q.image}" class="q-img-quiz" alt="Question image">`:''}
+      <div class="q-options">${q.options.map((o,i)=>`<div class="q-opt" onclick="selectOption(${i})" id="opt${i}">
+        <span class="q-opt-letter">${String.fromCharCode(65+i)}</span>${o}</div>`).join('')}
+      </div>
+    </div>
+    <div class="q-nav"><button class="btn btn-neon" onclick="nextQuestion()" id="nextBtn">${num===total?'Finish Quiz':'Next →'}</button></div>
+  </div>`;
+  startTimer()}
+
+function selectOption(i){
+  if(!quizState)return;
+  document.querySelectorAll('.q-opt').forEach(o=>o.classList.remove('selected'));
+  document.getElementById('opt'+i).classList.add('selected');quizState.selected=i}
+
+function startTimer(){
+  let t=30;clearInterval(quizTimer);
+  const el=document.getElementById('qTimer'),ring=document.getElementById('timerRing'),circ=document.getElementById('timerCircle'),full=2*Math.PI*30;
+  quizTimer=setInterval(()=>{
+    t--;if(!el)return;
+    el.textContent=t;
+    if(circ)circ.style.strokeDashoffset=(full*(1-t/30));
+    if(t<=10){el.classList.add('danger');ring&&ring.classList.add('danger')}
+    else{el.classList.remove('danger');ring&&ring.classList.remove('danger')}
+    if(t<=0){clearInterval(quizTimer);autoSubmit()}},1000)}
+
+function autoSubmit(){quizState.answers.push(quizState.selected);checkAnswer();
+  if(quizState.current<quizState.questions.length-1){quizState.current++;renderQuestion()}else{finishQuiz()}}
+
+function nextQuestion(){clearInterval(quizTimer);quizState.answers.push(quizState.selected);checkAnswer();
+  if(quizState.current<quizState.questions.length-1){quizState.current++;renderQuestion()}else{finishQuiz()}}
+
+function hashOption(str){let h=0,s=str+"INNOVEX_SALT";for(let i=0;i<s.length;i++){h=(h<<5)-h+s.charCodeAt(i);h|=0;}return h.toString();}
+function checkAnswer(){const q=quizState.questions[quizState.current];if(quizState.selected!==null&&hashOption(q.options[quizState.selected])===q.answerHash)quizState.score++}
+
+function finishQuiz(){
+  clearInterval(quizTimer);confetti();
+  const s=quizState.score,total=quizState.questions.length,pct=Math.round(s/total*100);
+  document.getElementById('quizArea').innerHTML=`<div class="quiz-wrap">
+    <div class="card card-glow result-card">
+      <div style="font-size:2.5rem;margin-bottom:16px">${pct>=80?'🏆':pct>=50?'🎯':'💪'}</div>
+      <h2 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;margin-bottom:20px">Well done, ${currentPlayer.name}!</h2>
+      <span class="result-score">${s}</span>
+      <span class="result-label">out of ${total}</span>
+      <div class="result-stats">
+        <div class="result-stat"><div class="sv" style="color:var(--success)">${s}</div><div class="sl">Correct</div></div>
+        <div class="result-stat"><div class="sv" style="color:var(--danger)">${total-s}</div><div class="sl">Wrong</div></div>
+        <div class="result-stat"><div class="sv" style="color:var(--gold)">${pct}%</div><div class="sl">Score</div></div>
+      </div>
+      <button class="btn btn-outline" style="margin-top:8px" onclick="navigate('player-dash')">← Back to Dashboard</button>
+    </div></div>`;
+  const players=getPlayers(),idx=players.findIndex(p=>p.phone===currentPlayer.phone);
+  if(idx>-1){players[idx].score=s;players[idx].quizDone=true;savePlayers(players);currentPlayer=players[idx]}
+  const scores=getScores();scores[currentPlayer.team]=(scores[currentPlayer.team]||0)+s;saveScores(scores);
+  toast('Score saved: '+s+'/'+total,'success')}
+
+/* ─── ADMIN: PLAYERS TABLE ─── */
+function renderPlayersTable(){
+  const players=getPlayers(),search=(document.getElementById('playerSearch')?.value||'').toLowerCase();
+  const filtered=players.filter(p=>p.name.toLowerCase().includes(search)||p.college.toLowerCase().includes(search));
+  const scores=getScores();
+  // Stats
+  const ps=document.getElementById('playerStats');
+  if(ps)ps.innerHTML=`<div class="stat-box"><div class="sv">${players.length}</div><div class="sl">Players</div></div>
+    <div class="stat-box"><div class="sv">${[...new Set(players.map(p=>p.team))].length}</div><div class="sl">Teams</div></div>
+    <div class="stat-box"><div class="sv">${players.filter(p=>p.quizDone).length}</div><div class="sl">Completed</div></div>`;
+  const tbody=document.querySelector('#playersTable tbody');tbody.innerHTML='';
+  filtered.forEach(p=>{tbody.innerHTML+=`<tr>
+    <td>${p.name}</td><td class="mono">${p.phone}</td><td>${p.college}</td><td>${p.team}</td>
+    <td class="mono" style="color:var(--neon)">${p.code}</td>
+    <td class="mono">${p.score}</td>
+    <td><button class="btn btn-danger btn-sm" onclick="deletePlayer('${p.phone}')">Delete</button></td></tr>`})}
+
+function deletePlayer(phone){if(!confirm('Delete this player?'))return;const players=getPlayers().filter(p=>p.phone!==phone);savePlayers(players);renderPlayersTable();toast('Player deleted','info')}
+
+function exportCSV(){const players=getPlayers();let csv='Name,Phone,College,Team,Code,Score\n';players.forEach(p=>{csv+=`"${p.name}","${p.phone}","${p.college}","${p.team}","${p.code}",${p.score}\n`});
+  const blob=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='quizmania_players.csv';a.click();toast('CSV exported','success')}
+
+/* ─── ADMIN: ROUNDS ─── */
+const ROUND_DESCS={Preliminary:'MCQ-based online quiz. Phones/laptops required. Timed questions.',Visual:'Image/video-based questions on screen. Team discussion format.',Buzzer:'First team to buzz answers. One wrong answer = point deducted.',Finale:'High-stakes final round for top 3 teams. Winner takes all!'};
+function renderRoundsGrid(){
+  const rounds=getRounds(),ar=getActiveRound(),grid=document.getElementById('roundsGrid');grid.innerHTML='';
+  ['Preliminary','Visual','Buzzer','Finale'].forEach(r=>{
+    const status=ar===r?'active':rounds[r]==='completed'?'completed':'inactive';
+    const statusClass=status==='active'?'round-active':status==='completed'?'round-completed':'round-inactive';
+    const dot=status==='active'?'<span class="badge-dot" style="background:var(--success)"></span>':'';
+    grid.innerHTML+=`<div class="card round-card">
+      <div class="round-card-top"><h3>${r}</h3><span class="round-status ${statusClass}">${dot}${status.toUpperCase()}</span></div>
+      <p>${ROUND_DESCS[r]}</p>
+      <div class="round-card-actions">
+        <button class="toggle ${status==='active'?'on':''}" onclick="toggleRound('${r}')"></button>
+        <span style="font-size:.78rem;color:var(--text-dim)">${status==='active'?'Active':'Inactive'}</span>
+        ${status!=='active'?`<button class="btn btn-outline btn-sm" onclick="markCompleted('${r}')">Mark Done</button>`:''}
+        ${r==='Buzzer'?`<button class="btn btn-neon btn-sm" onclick="launchBuzzerMode()" style="margin-left:auto">🔔 Launch Buzzer</button>`:''}
+        ${r==='Finale'?`<button class="btn btn-sm" onclick="launchFinaleMode()" style="margin-left:auto;background:linear-gradient(135deg,var(--gold),#ff6b35);border:none;color:#000;font-weight:700">🏆 Launch Finale</button>`:''}
+      </div></div>`})}
+
+function toggleRound(r){const ar=getActiveRound();if(ar===r){setActiveRound('');toast(r+' deactivated','info')}
+  else{setActiveRound(r);toast(r+' is now active!','success')}renderRoundsGrid()}
+function markCompleted(r){const rounds=getRounds();rounds[r]='completed';saveRounds(rounds);if(getActiveRound()===r)setActiveRound('');renderRoundsGrid();toast(r+' marked as completed','info')}
+
+/* ─── ADMIN: QUESTIONS ─── */
+function renderQuestions(){
+  const questions=getQuestions(),fr=document.getElementById('filterRound')?.value||'',fc=document.getElementById('filterCat')?.value||'';
+  const filtered=questions.filter(q=>(fr?q.round===fr:true)&&(fc?q.category===fc:true));
+  const list=document.getElementById('questionsList');list.innerHTML='';
+  if(!filtered.length){list.innerHTML='<p style="color:var(--text-dim);text-align:center;padding:40px">No questions found.</p>';return}
+  filtered.forEach(q=>{
+    const dc=q.difficulty==='Easy'?'diff-easy':q.difficulty==='Hard'?'diff-hard':'diff-medium';
+    const imgHtml=q.image?`<img src="${q.image}" class="q-card-img" alt="Visual question" loading="lazy">`:''
+    list.innerHTML+=`<div class="card q-card">
+      <h4>${q.q}</h4>
+      ${imgHtml}
+      <div class="q-meta">
+        <span>📁 ${q.category}</span><span>🎯 ${q.round}</span>
+        <span class="${dc}">⚡ ${q.difficulty}</span>
+        <span style="color:var(--success);border-color:rgba(16,185,129,.2);background:rgba(16,185,129,.06)">✓ ${String.fromCharCode(65+q.answer)}</span>
+        ${q.image?'<span style="color:var(--neon);border-color:rgba(0,245,255,.2);background:rgba(0,245,255,.06)">🖼 Image</span>':''}
+      </div>
+      <p style="font-size:.78rem;color:var(--text-dim);margin:6px 0">${q.options.map((o,j)=>`<span style="margin-right:12px">${String.fromCharCode(65+j)}) ${o}</span>`).join('')}</p>
+      <div style="margin-top:10px;display:flex;gap:6px">
+        <button class="btn btn-outline btn-sm" onclick="editQuestion('${q.id}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteQuestion('${q.id}')">Delete</button>
+      </div></div>`})}
+
+function showAddQuestionModal(edit=null){
+  const q=edit||{q:'',options:['','','',''],answer:0,category:'Science & Tech',round:'Preliminary',difficulty:'Medium',image:''};
+  const cats=['Science & Tech','General Knowledge','Logical Reasoning','Current Affairs','Rapid Fire'];
+  const rnds=['Preliminary','Visual','Buzzer','Finale'];const diffs=['Easy','Medium','Hard'];
+  showModal(`<h3 style="font-family:var(--font-head);font-size:1.5rem;letter-spacing:2px;margin-bottom:20px">${edit?'EDIT':'ADD'} QUESTION</h3>
+    <div class="form-group"><label>Question</label><textarea id="mqQ" rows="3">${q.q}</textarea></div>
+    <div class="form-group"><label>Image URL <span style="color:var(--text-dim);font-size:.65rem;text-transform:none;letter-spacing:0">(optional, for Visual round)</span></label><input id="mqImg" value="${q.image||''}" placeholder="e.g. images/visual_q1.png"></div>
+    ${q.options.map((o,i)=>`<div class="form-group"><label>Option ${String.fromCharCode(65+i)}</label><input id="mqO${i}" value="${o}"></div>`).join('')}
+    <div class="form-group"><label>Correct Answer</label><select id="mqA">${[0,1,2,3].map(i=>`<option value="${i}" ${q.answer===i?'selected':''}>Option ${String.fromCharCode(65+i)}</option>`).join('')}</select></div>
+    <div class="form-group"><label>Category</label><select id="mqCat">${cats.map(c=>`<option ${q.category===c?'selected':''}>${c}</option>`).join('')}</select></div>
+    <div class="form-group"><label>Round</label><select id="mqRnd">${rnds.map(r=>`<option ${q.round===r?'selected':''}>${r}</option>`).join('')}</select></div>
+    <div class="form-group"><label>Difficulty</label><select id="mqDiff">${diffs.map(d=>`<option ${q.difficulty===d?'selected':''}>${d}</option>`).join('')}</select></div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn btn-neon" onclick="saveQuestion('${edit?.id||''}')">${edit?'Update':'Add'} Question</button>
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+    </div>`)}
+
+function saveQuestion(editId){
+  const imgVal=document.getElementById('mqImg')?.value.trim()||'';
+  const qObj={q:document.getElementById('mqQ').value.trim(),options:[0,1,2,3].map(i=>document.getElementById('mqO'+i).value.trim()),answer:parseInt(document.getElementById('mqA').value),category:document.getElementById('mqCat').value,round:document.getElementById('mqRnd').value,difficulty:document.getElementById('mqDiff').value,image:imgVal||undefined};
+  if(!qObj.q||qObj.options.some(o=>!o)){toast('Fill all fields','error');return}
+  const questions=getQuestions();
+  if(editId){const idx=questions.findIndex(q=>q.id===editId);if(idx>-1){questions[idx]={...questions[idx],...qObj};saveQuestions(questions);toast('Question updated','success')}}
+  else{qObj.id='q'+Date.now();questions.push(qObj);saveQuestions(questions);toast('Question added','success')}
+  closeModal();renderQuestions()}
+
+function editQuestion(id){const q=getQuestions().find(q=>q.id===id);if(q)showAddQuestionModal(q)}
+function deleteQuestion(id){if(!confirm('Delete this question?'))return;saveQuestions(getQuestions().filter(q=>q.id!==id));renderQuestions();toast('Deleted','info')}
+
+/* ─── ADMIN: LEADERBOARD ─── */
+function renderAdminLeaderboard(){
+  const scores=getScores(),sorted=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+  const tbody=document.querySelector('#adminLeaderboard tbody');tbody.innerHTML='';
+  const ar=getActiveRound(),quals=getQualifications();
+  const allowedTeams=ar&&quals[ar]?new Set(quals[ar]):null;
+  
+  sorted.forEach(([team,score],i)=>{
+    const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1;
+    let statusHtml='<span style="color:var(--text-dim)">-</span>';
+    if(ar){
+      const isQual=!allowedTeams||allowedTeams.has(team);
+      statusHtml=isQual?`<span style="color:var(--success);font-weight:600;font-size:.8rem;border:1px solid rgba(16,185,129,.3);padding:2px 6px;border-radius:4px;background:rgba(16,185,129,.05)">QUALIFIED</span>`:
+        `<span style="color:var(--danger);font-size:.8rem;border:1px solid rgba(244,63,94,.3);padding:2px 6px;border-radius:4px;background:rgba(244,63,94,.05)">ELIMINATED</span>`;
+    }
+    tbody.innerHTML+=`<tr><td>${medal}</td><td>${team}</td><td class="mono" style="color:var(--neon)">${score}</td>
+      <td>${statusHtml}</td>
+      <td><input type="number" value="${score}" style="width:70px;padding:5px 8px;background:rgba(255,255,255,.04);border:1px solid var(--glass-border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:.82rem" onchange="adjustScore('${team}',this.value)"></td></tr>`});
+  const chart=document.getElementById('barChart');const top5=sorted.slice(0,5);const max=Math.max(...top5.map(t=>t[1]),1);chart.innerHTML='';
+  const colors=['var(--neon)','var(--neon2)','var(--success)','var(--gold)','var(--danger)'];
+  top5.forEach(([team,score],i)=>{chart.innerHTML+=`<div class="bar-col">
+    <div class="bar-val">${score}</div>
+    <div class="bar" style="height:${(score/max)*160}px;background:${colors[i%5]}"></div>
+    <div class="bar-label">${team}</div></div>`})}
+
+function showAdvanceModal(){
+  const rounds=['Preliminary','Visual','Buzzer','Finale'];
+  const ar=getActiveRound();
+  let nextRound=rounds[1];
+  if(ar){const idx=rounds.indexOf(ar);if(idx>=0&&idx<3)nextRound=rounds[idx+1]}
+  showModal(`<h3 style="font-family:var(--font-head);font-size:1.5rem;letter-spacing:2px;margin-bottom:12px;color:var(--neon)">⚡ ADVANCE TEAMS</h3>
+    <p style="margin-bottom:24px;color:var(--text-mid);font-size:.9rem;line-height:1.5">Eliminate bottom teams and qualify the top teams for the next round. Ties at the cutoff will automatically advance.</p>
+    <div class="form-group"><label>Target Round</label><select id="advRound">${rounds.map(r=>`<option value="${r}" ${r===nextRound?'selected':''}>${r}</option>`).join('')}</select></div>
+    <div class="form-group"><label>Number of Top Teams to Advance</label><input type="number" id="advCount" min="1" value="10"></div>
+    <div style="display:flex;gap:8px;margin-top:20px">
+      <button class="btn btn-neon" onclick="advanceTeams()">Advance Teams</button>
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+    </div>`)}
+
+function advanceTeams(){
+  const round=document.getElementById('advRound').value;
+  const count=parseInt(document.getElementById('advCount').value,10);
+  if(!count||count<1){toast('Invalid count','error');return}
+  const scores=getScores(),sorted=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+  if(sorted.length===0){toast('No teams available','error');return}
+  
+  // Tie-breaker logic: Get the score of the Nth team, and advance everyone >= that score
+  const thresholdIdx=Math.min(count-1,sorted.length-1);
+  const cutoffScore=sorted[thresholdIdx][1];
+  const advancingTeams=sorted.filter(t=>t[1]>=cutoffScore).map(t=>t[0]);
+  
+  const quals=getQualifications();
+  quals[round]=advancingTeams;
+  saveQualifications(quals);
+  closeModal();
+  renderAdminLeaderboard();
+  
+  toast(`Advanced ${advancingTeams.length} teams to ${round}! (Cutoff: ${cutoffScore} pts)`,`success`);
+}
+
+function adjustScore(team,val){const scores=getScores();scores[team]=parseInt(val)||0;saveScores(scores);toast('Score updated for '+team,'success');renderAdminLeaderboard()}
+
+/* ─── ADMIN: SETTINGS ─── */
+function confirmAction(msg,fn){showModal(`<h3 style="font-family:var(--font-head);font-size:1.5rem;letter-spacing:2px;margin-bottom:12px;color:var(--warning)">⚠ CONFIRM</h3><p style="margin-bottom:24px;color:var(--text-mid);font-size:.9rem">${msg}</p><div style="display:flex;gap:8px"><button class="btn btn-danger" onclick="closeModal();(${fn.toString()})()">Yes, Proceed</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>`)}
+function resetScores(){const scores=getScores();Object.keys(scores).forEach(k=>scores[k]=0);saveScores(scores);const players=getPlayers();players.forEach(p=>{p.score=0;p.quizDone=false});savePlayers(players);toast('All scores reset','success');renderAdminLeaderboard()}
+function clearAllData(){savePlayers([]);saveScores({});setActiveRound('');saveRounds({Preliminary:'inactive',Visual:'inactive',Buzzer:'inactive',Finale:'inactive'});toast('All data cleared','success');renderPlayersTable();renderAdminLeaderboard()}
+
+/* ─── SOUND EFFECTS ─── */
+const AudioCtx=window.AudioContext||window.webkitAudioContext;
+let audioCtx=null;
+function getAudio(){if(!audioCtx)audioCtx=new AudioCtx();return audioCtx}
+function playTone(freq,duration,type='sine',vol=0.3){
+  const ctx=getAudio(),osc=ctx.createOscillator(),gain=ctx.createGain();
+  osc.type=type;osc.frequency.setValueAtTime(freq,ctx.currentTime);
+  gain.gain.setValueAtTime(vol,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(0.01,ctx.currentTime+duration);
+  osc.connect(gain);gain.connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+duration)}
+function sfxBuzz(){playTone(880,.15,'square',.25);setTimeout(()=>playTone(1100,.1,'square',.2),100)}
+function sfxCorrect(){playTone(523,.12,'sine',.3);setTimeout(()=>playTone(659,.12,'sine',.3),120);setTimeout(()=>playTone(784,.2,'sine',.3),240)}
+function sfxWrong(){playTone(200,.3,'sawtooth',.2);setTimeout(()=>playTone(150,.3,'sawtooth',.15),150)}
+function sfxReveal(){playTone(440,.08,'sine',.2);setTimeout(()=>playTone(660,.15,'sine',.25),80)}
+
+/* ─── BUZZER ROUND ─── */
+let buzzerState=null;
+
+function launchBuzzerMode(){
+  const questions=getQuestions().filter(q=>q.round==='Buzzer');
+  const allQ=questions.length>0?questions:getQuestions().filter(q=>q.round==='Preliminary');
+  if(allQ.length===0){toast('No questions available','error');return}
+  const quals=getQualifications();
+  const teams=quals['Buzzer']?quals['Buzzer']:[...new Set(getPlayers().map(p=>p.team))];
+  if(teams.length<2){toast('Need at least 2 qualified teams','error');return}
+  buzzerState={questions:allQ.sort(()=>Math.random()-.5),current:0,teams,buzzedTeam:null,phase:'waiting',answered:false};
+  document.getElementById('buzzerOverlay').classList.add('active');
+  updateBuzzerScoreboard();
+  showBuzzerWaiting();
+  toast('Buzzer Mode launched!','success')}
+
+function closeBuzzerMode(){
+  document.getElementById('buzzerOverlay').classList.remove('active');
+  buzzerState=null;renderAdminLeaderboard()}
+
+function showBuzzerWaiting(){
+  const main=document.getElementById('buzzerMain');
+  const num=buzzerState.current+1,total=buzzerState.questions.length;
+  document.getElementById('buzzerQCount').textContent=`Q${num}/${total}`;
+  main.innerHTML=`<div class="buzzer-waiting">READY</div>
+    <div class="buzzer-controls" style="margin-top:30px">
+      <button class="btn btn-neon" onclick="buzzerRevealQuestion()" style="padding:14px 36px;font-size:1.1rem">🎯 Reveal Question</button>
+    </div>
+    <p style="color:var(--text-dim);font-size:.82rem;margin-top:14px">Question ${num} of ${total}</p>`}
+
+function buzzerRevealQuestion(){
+  sfxReveal();
+  const q=buzzerState.questions[buzzerState.current];
+  const main=document.getElementById('buzzerMain');
+  buzzerState.phase='question';buzzerState.buzzedTeam=null;buzzerState.answered=false;
+  const imgHtml=q.image?`<img src="${q.image}" alt="Question image">`:'';
+  main.innerHTML=`<div class="buzzer-q-num">QUESTION ${buzzerState.current+1}</div>
+    <div class="buzzer-question">${q.q}${imgHtml}</div>
+    <div class="buzzer-options" id="buzzerOpts">${q.options.map((o,i)=>
+      `<div class="buzzer-opt" id="bopt${i}"><span class="b-letter">${String.fromCharCode(65+i)}</span>${o}</div>`).join('')}</div>
+    <p style="color:var(--neon);font-family:var(--font-head);font-size:1.4rem;letter-spacing:3px;margin:12px 0">WAITING FOR BUZZ...</p>
+    <div class="buzzer-teams" id="buzzerTeams">${buzzerState.teams.map(t=>
+      `<button class="buzzer-team-btn" onclick="teamBuzzed('${t.replace(/'/g,"\\'")}')">${t}</button>`).join('')}</div>
+    <div class="buzzer-controls" style="margin-top:10px">
+      <button class="btn btn-outline btn-sm" onclick="buzzerShowAnswer()">👁 Show Answer</button>
+      <button class="btn btn-outline btn-sm" onclick="buzzerSkipQuestion()">⏭ Skip</button>
+    </div>`;
+  main.classList.add('buzzer-flash');setTimeout(()=>main.classList.remove('buzzer-flash'),400)}
+
+function teamBuzzed(team){
+  if(!buzzerState||buzzerState.answered)return;
+  sfxBuzz();buzzerState.buzzedTeam=team;buzzerState.phase='buzzed';
+  document.querySelectorAll('.buzzer-team-btn').forEach(b=>{b.classList.remove('buzzed');if(b.textContent===team)b.classList.add('buzzed')});
+  const q=buzzerState.questions[buzzerState.current];
+  const main=document.getElementById('buzzerMain');
+  const verdictArea=document.createElement('div');verdictArea.className='buzzer-verdict';verdictArea.id='buzzerVerdict';
+  verdictArea.innerHTML=`<span style="font-family:var(--font-head);font-size:1.4rem;letter-spacing:2px;color:var(--neon);margin-right:12px">🔔 ${team}</span>
+    <button class="btn btn-success btn-sm" onclick="buzzerMark(true)" style="padding:8px 20px">✓ Correct (+1)</button>
+    <button class="btn btn-danger btn-sm" onclick="buzzerMark(false)" style="padding:8px 20px">✗ Wrong (-1)</button>`;
+  const old=document.getElementById('buzzerVerdict');if(old)old.remove();
+  main.appendChild(verdictArea)}
+
+function buzzerMark(correct){
+  if(!buzzerState||!buzzerState.buzzedTeam)return;
+  const team=buzzerState.buzzedTeam,q=buzzerState.questions[buzzerState.current];
+  const scores=getScores();const delta=correct?1:-1;
+  scores[team]=(scores[team]||0)+delta;saveScores(scores);
+  if(correct){sfxCorrect();buzzerState.answered=true;
+    document.getElementById('bopt'+q.answer).classList.add('b-correct');
+    toast(team+' +1 point!','success')}
+  else{sfxWrong();buzzerState.buzzedTeam=null;buzzerState.phase='question';
+    document.querySelectorAll('.buzzer-team-btn').forEach(b=>b.classList.remove('buzzed'));
+    const v=document.getElementById('buzzerVerdict');if(v)v.remove();
+    toast(team+' -1 point! Others can buzz.','error')}
+  updateBuzzerScoreboard();
+  if(correct){setTimeout(()=>{
+    const nav=document.createElement('div');nav.className='buzzer-controls';nav.style.marginTop='16px';
+    nav.innerHTML=buzzerState.current<buzzerState.questions.length-1?
+      `<button class="btn btn-neon" onclick="buzzerNextQuestion()">Next Question →</button>`:
+      `<button class="btn btn-neon" onclick="buzzerFinish()">🏆 Finish Round</button>`;
+    document.getElementById('buzzerMain').appendChild(nav)},600)}}
+
+function buzzerShowAnswer(){
+  const q=buzzerState.questions[buzzerState.current];
+  document.getElementById('bopt'+q.answer).classList.add('b-correct');buzzerState.answered=true;
+  sfxCorrect()}
+
+function buzzerSkipQuestion(){
+  if(buzzerState.current<buzzerState.questions.length-1){buzzerState.current++;showBuzzerWaiting()}
+  else buzzerFinish()}
+
+function buzzerNextQuestion(){buzzerState.current++;showBuzzerWaiting()}
+
+function buzzerFinish(){
+  confetti();
+  const scores=getScores(),sorted=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+  const main=document.getElementById('buzzerMain');
+  const top3=sorted.slice(0,3);
+  const medals=['🥇','🥈','🥉'];
+  main.innerHTML=`<div style="margin-bottom:20px;font-size:3rem">🏆</div>
+    <h2 style="font-family:var(--font-head);font-size:clamp(2rem,5vw,3.5rem);letter-spacing:4px;margin-bottom:30px">BUZZER ROUND COMPLETE!</h2>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;justify-content:center">${top3.map(([team,score],i)=>
+      `<div class="card" style="padding:24px 32px;text-align:center;min-width:160px;${i===0?'border-color:var(--gold);box-shadow:0 0 30px rgba(251,191,36,.2)':''}">
+        <div style="font-size:2.5rem;margin-bottom:8px">${medals[i]||''}</div>
+        <div style="font-family:var(--font-head);font-size:1.3rem;letter-spacing:1px">${team}</div>
+        <div style="font-family:var(--font-mono);font-size:1.8rem;color:var(--neon);margin-top:6px">${score}</div>
+      </div>`).join('')}</div>
+    <button class="btn btn-outline" style="margin-top:30px" onclick="closeBuzzerMode()">← Back to Dashboard</button>`;
+  updateBuzzerScoreboard()}
+
+function updateBuzzerScoreboard(){
+  const scores=getScores(),sorted=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+  const sb=document.getElementById('buzzerScoreboard');if(!sb)return;
+  sb.innerHTML=sorted.map(([team,score],i)=>{
+    const hl=buzzerState?.buzzedTeam===team?'highlight':'';
+    const medal=i===0?'🥇 ':i===1?'🥈 ':i===2?'🥉 ':'';
+    return`<div class="buzzer-sb-row ${hl}"><span>${medal}${team}</span><span class="buzzer-sb-score">${score}</span></div>`}).join('')}
+
+/* ═══════════════════════════════════════════
+   ─── FINALE ROUND: WAGER & CONQUER ───
+   ═══════════════════════════════════════════ */
+const FINALE_MULTIPLIERS=[2,3,4,5,10];
+const FINALE_MULT_CLASS=['m2','m3','m4','m5','m10'];
+let finaleState=null;
+
+function launchFinaleMode(){
+  const scores=getScores();
+  const sorted=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+  if(sorted.length<2){toast('Need at least 2 teams with scores','error');return}
+  const questions=getQuestions().filter(q=>q.round==='Finale');
+  if(questions.length<5){toast('Need at least 5 Finale questions. Add more in Questions tab.','error');return}
+  // Show team selection
+  const body=document.getElementById('finaleBody');
+  const quals=getQualifications();
+  const qualsFinale=quals['Finale'];
+  const top=qualsFinale ? sorted.filter(([t])=>qualsFinale.includes(t)) : sorted.slice(0,6);
+  body.innerHTML=`<div style="margin-bottom:20px;font-size:3rem">🏆</div>
+    <h2 style="font-family:var(--font-head);font-size:clamp(1.8rem,4vw,3rem);letter-spacing:4px;margin-bottom:10px">SELECT FINALISTS</h2>
+    <p style="color:var(--text-dim);margin-bottom:24px">Choose the top teams that will compete in the Grand Finale</p>
+    <div class="finale-teams-row" id="finaleTeamSelect">${top.map(([team,score])=>
+      `<label class="finale-team-card" style="cursor:pointer" onclick="this.classList.toggle('active-turn')">
+        <input type="checkbox" value="${team}" style="display:none" checked>
+        <div class="finale-team-name">${team}</div>
+        <div class="finale-team-score">${score}</div>
+      </label>`).join('')}</div>
+    <button class="btn btn-neon" style="margin-top:20px;padding:14px 40px;font-size:1.1rem" onclick="startFinale()">⚡ START THE FINALE</button>`;
+  document.getElementById('finaleOverlay').classList.add('active')}
+
+function startFinale(){
+  const checkboxes=document.querySelectorAll('#finaleTeamSelect input:checked');
+  const teams=[...checkboxes].map(c=>c.value);
+  if(teams.length<2){toast('Select at least 2 teams','error');return}
+  const questions=getQuestions().filter(q=>q.round==='Finale').sort(()=>Math.random()-.5).slice(0,5);
+  const scores=getScores();
+  finaleState={
+    questions,current:0,teams,
+    teamScores:Object.fromEntries(teams.map(t=>[t,scores[t]||0])),
+    wagers:{},verdicts:{},phase:'category'
+  };
+  finaleShowCategory()}
+
+function closeFinaleMode(){
+  document.getElementById('finaleOverlay').classList.remove('active');
+  finaleState=null;renderAdminLeaderboard()}
+
+function finaleTeamCards(showWager=false,showVerdict=false){
+  return finaleState.teams.map(t=>{
+    const score=finaleState.teamScores[t];
+    const wager=finaleState.wagers[t];
+    const verdict=finaleState.verdicts[t];
+    let wagerHtml='';
+    if(showWager&&wager!==undefined)wagerHtml=`<div class="finale-team-wager">Wagered: ${wager} pts</div>`;
+    let verdictHtml='';
+    if(showVerdict&&verdict!==undefined){
+      const color=verdict?'var(--success)':'var(--danger)';
+      const icon=verdict?'✓':'✗';
+      verdictHtml=`<div style="margin-top:8px;font-size:1.2rem;color:${color};font-weight:700">${icon}</div>`}
+    return`<div class="finale-team-card">
+      <div class="finale-team-name">${t}</div>
+      <div class="finale-team-score">${score}</div>
+      ${wagerHtml}${verdictHtml}</div>`}).join('')}
+
+function finaleShowCategory(){
+  if(!finaleState)return;
+  const idx=finaleState.current;
+  const q=finaleState.questions[idx];
+  const mult=FINALE_MULTIPLIERS[idx]||2;
+  const mClass=FINALE_MULT_CLASS[idx]||'m2';
+  const body=document.getElementById('finaleBody');
+  document.getElementById('finaleQCount').textContent=`Q${idx+1}/5`;
+  finaleState.wagers={};finaleState.verdicts={};finaleState.phase='category';
+  sfxReveal();
+  body.innerHTML=`<div class="finale-multiplier ${mClass}">${mult}× MULTIPLIER</div>
+    <p style="color:var(--text-dim);font-size:.9rem;margin-bottom:8px">QUESTION ${idx+1} OF 5</p>
+    <div class="finale-category">${q.category.toUpperCase()}</div>
+    <p style="color:var(--text-dim);font-size:.85rem;margin-bottom:24px">Category revealed! Teams, decide your wagers.</p>
+    <div class="finale-teams-row">${finaleTeamCards()}</div>
+    <button class="btn btn-neon" style="margin-top:20px;padding:12px 36px" onclick="finaleShowWager()">💰 Set Wagers</button>`}
+
+function finaleShowWager(){
+  finaleState.phase='wager';
+  const idx=finaleState.current;
+  const mult=FINALE_MULTIPLIERS[idx]||2;
+  const mClass=FINALE_MULT_CLASS[idx]||'m2';
+  const body=document.getElementById('finaleBody');
+  let currentTeamIdx=0;
+  finaleState._wagerTeamIdx=0;
+  renderWagerForTeam()}
+
+function renderWagerForTeam(){
+  const body=document.getElementById('finaleBody');
+  const idx=finaleState.current;
+  const mult=FINALE_MULTIPLIERS[idx]||2;
+  const mClass=FINALE_MULT_CLASS[idx]||'m2';
+  const ti=finaleState._wagerTeamIdx;
+  const team=finaleState.teams[ti];
+  const score=finaleState.teamScores[team];
+  const wagerAmounts=[
+    {label:'🟢 Safe (10%)',pct:.1},
+    {label:'🟡 Moderate (25%)',pct:.25},
+    {label:'🔴 Bold (50%)',pct:.5},
+    {label:'💀 All-In (100%)',pct:1}
+  ];
+  body.innerHTML=`<div class="finale-multiplier ${mClass}">${mult}× MULTIPLIER</div>
+    <h3 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:3px;margin:16px 0;color:var(--neon)">${team}'s WAGER</h3>
+    <p style="color:var(--text-dim);margin-bottom:6px">Current Score: <strong style="color:var(--neon);font-family:var(--font-mono)">${score}</strong></p>
+    <p style="color:var(--text-dim);font-size:.82rem;margin-bottom:20px">Team ${ti+1} of ${finaleState.teams.length}</p>
+    <div class="finale-wager-btns">${wagerAmounts.map(w=>{
+      const amt=Math.max(1,Math.round(score*w.pct));
+      return`<button class="finale-wager-btn" onclick="finaleSetWager('${team.replace(/'/g,"\\'")}',${amt},this)">${w.label}<br><span style="font-size:1.1rem;color:var(--gold)">${amt} pts</span></button>`}).join('')}</div>
+    <div style="margin-top:12px;display:flex;align-items:center;gap:8px;justify-content:center">
+      <span style="color:var(--text-dim);font-size:.82rem">Custom:</span>
+      <input type="number" id="customWager" min="1" max="${score}" value="${Math.round(score*.25)}" style="width:80px;padding:6px 10px;background:rgba(255,255,255,.04);border:1px solid var(--glass-border);border-radius:6px;color:var(--text);font-family:var(--font-mono)">
+      <button class="btn btn-outline btn-sm" onclick="finaleSetWager('${team.replace(/'/g,"\\'")}',parseInt(document.getElementById('customWager').value)||1)">Set</button>
+    </div>`}
+
+function finaleSetWager(team,amount){
+  const score=finaleState.teamScores[team];
+  amount=Math.max(1,Math.min(amount,score));
+  finaleState.wagers[team]=amount;
+  sfxBuzz();
+  toast(team+' wagered '+amount+' points!','success');
+  finaleState._wagerTeamIdx++;
+  if(finaleState._wagerTeamIdx<finaleState.teams.length){setTimeout(()=>renderWagerForTeam(),500)}
+  else{setTimeout(()=>finaleShowQuestion(),600)}}
+
+function finaleShowQuestion(){
+  finaleState.phase='question';
+  const idx=finaleState.current;
+  const q=finaleState.questions[idx];
+  const mult=FINALE_MULTIPLIERS[idx]||2;
+  const mClass=FINALE_MULT_CLASS[idx]||'m2';
+  const body=document.getElementById('finaleBody');
+  sfxReveal();
+  const imgHtml=q.image?`<img src="${q.image}" alt="Question image">`:'';
+  body.innerHTML=`<div class="finale-multiplier ${mClass}">${mult}×</div>
+    <div class="finale-q">${q.q}${imgHtml}</div>
+    <div class="buzzer-options" style="max-width:700px;margin-bottom:20px">${q.options.map((o,i)=>
+      `<div class="buzzer-opt" id="fopt${i}"><span class="b-letter">${String.fromCharCode(65+i)}</span>${o}</div>`).join('')}</div>
+    <p style="color:var(--text-dim);font-size:.82rem;margin-bottom:16px">Teams discuss. Admin marks each team's answer below.</p>
+    <div class="finale-teams-row">${finaleState.teams.map(t=>{
+      const score=finaleState.teamScores[t];
+      const wager=finaleState.wagers[t]||0;
+      return`<div class="finale-team-card" id="fteam-${t.replace(/\s/g,'_')}">
+        <div class="finale-team-name">${t}</div>
+        <div class="finale-team-score">${score}</div>
+        <div class="finale-team-wager">Wagered: ${wager} pts</div>
+        <div style="margin-top:10px;display:flex;gap:6px;justify-content:center">
+          <button class="finale-verdict-btn correct" onclick="finaleMarkTeam('${t.replace(/'/g,"\\'")}',true)">✓ Correct</button>
+          <button class="finale-verdict-btn wrong" onclick="finaleMarkTeam('${t.replace(/'/g,"\\'")}',false)">✗ Wrong</button>
+        </div></div>`}).join('')}</div>
+    <div style="margin-top:16px;display:flex;gap:10px;justify-content:center">
+      <button class="btn btn-outline btn-sm" onclick="finaleRevealAnswer()">👁 Show Answer</button>
+      <button class="btn btn-neon" onclick="finaleProcessResults()" id="finaleSubmitBtn" style="display:none">📊 Process Results</button>
+    </div>`}
+
+function finaleMarkTeam(team,correct){
+  finaleState.verdicts[team]=correct;
+  const card=document.getElementById('fteam-'+team.replace(/\s/g,'_'));
+  if(card){card.style.borderColor=correct?'var(--success)':'var(--danger)';
+    card.style.boxShadow=correct?'0 0 20px rgba(16,185,129,.2)':'0 0 20px rgba(244,63,94,.15)'}
+  correct?sfxCorrect():sfxWrong();
+  // Check if all teams marked
+  if(Object.keys(finaleState.verdicts).length===finaleState.teams.length){
+    document.getElementById('finaleSubmitBtn').style.display='inline-flex'}}
+
+function finaleRevealAnswer(){
+  const q=finaleState.questions[finaleState.current];
+  document.getElementById('fopt'+q.answer).classList.add('b-correct');sfxCorrect()}
+
+function finaleProcessResults(){
+  const idx=finaleState.current;
+  const mult=FINALE_MULTIPLIERS[idx]||2;
+  const body=document.getElementById('finaleBody');
+  const scores=getScores();
+  // Apply wagers
+  finaleState.teams.forEach(t=>{
+    const wager=finaleState.wagers[t]||0;
+    const correct=finaleState.verdicts[t];
+    const delta=correct?(wager*mult):(-wager);
+    finaleState.teamScores[t]=Math.max(0,finaleState.teamScores[t]+delta);
+    scores[t]=finaleState.teamScores[t];
+  });saveScores(scores);
+  // Show results
+  const mClass=FINALE_MULT_CLASS[idx]||'m2';
+  body.innerHTML=`<div class="finale-multiplier ${mClass}">${mult}× RESULTS</div>
+    <div class="finale-teams-row" style="margin:24px 0">${finaleState.teams.map(t=>{
+      const wager=finaleState.wagers[t]||0;
+      const correct=finaleState.verdicts[t];
+      const delta=correct?(wager*mult):(-wager);
+      const color=correct?'var(--success)':'var(--danger)';
+      const sign=correct?'+':'';
+      return`<div class="finale-team-card" style="border-color:${color}">
+        <div class="finale-team-name">${t}</div>
+        <div class="finale-team-score">${finaleState.teamScores[t]}</div>
+        <div style="font-family:var(--font-mono);font-size:1.2rem;color:${color};margin-top:6px">${sign}${delta} pts</div>
+        <div style="font-size:.75rem;color:var(--text-dim);margin-top:4px">Wagered ${wager} × ${mult}</div>
+      </div>`}).join('')}</div>
+    <button class="btn btn-neon" style="padding:12px 36px" onclick="finaleNext()">${idx<4?'Next Question →':'🏆 CROWN THE CHAMPION'}</button>`;
+  if(idx>=4)setTimeout(()=>{for(let i=0;i<3;i++)setTimeout(()=>confetti(),i*400)},300)}
+
+function finaleNext(){
+  finaleState.current++;
+  if(finaleState.current>=5)finaleShowWinner();
+  else finaleShowCategory()}
+
+function finaleShowWinner(){
+  const body=document.getElementById('finaleBody');
+  const sorted=finaleState.teams.map(t=>([t,finaleState.teamScores[t]])).sort((a,b)=>b[1]-a[1]);
+  const winner=sorted[0];
+  const medals=['🥇','🥈','🥉'];
+  // Grand confetti burst
+  for(let i=0;i<5;i++)setTimeout(()=>confetti(),i*500);
+  sfxCorrect();setTimeout(sfxCorrect,300);setTimeout(sfxCorrect,600);
+  body.innerHTML=`<div class="finale-winner-trophy">🏆</div>
+    <p style="font-family:var(--font-head);font-size:1.2rem;letter-spacing:4px;color:var(--text-dim);margin-bottom:8px">THE WINNER OF QUIZ MANIA</p>
+    <div class="finale-winner-name">${winner[0]}</div>
+    <div style="font-family:var(--font-mono);font-size:2.5rem;color:var(--neon);margin:12px 0">${winner[1]} POINTS</div>
+    <div class="finale-teams-row" style="margin-top:30px">${sorted.map(([team,score],i)=>
+      `<div class="finale-team-card" style="${i===0?'border-color:var(--gold);box-shadow:0 0 30px rgba(251,191,36,.3)':''}">
+        <div style="font-size:2rem;margin-bottom:6px">${medals[i]||'🎖'}</div>
+        <div class="finale-team-name">${team}</div>
+        <div class="finale-team-score">${score}</div>
+      </div>`).join('')}</div>
+    <button class="btn btn-outline" style="margin-top:30px" onclick="closeFinaleMode()">← Back to Dashboard</button>`;
+  document.getElementById('finaleQCount').textContent='COMPLETE'}
+
+/* ─── INIT ─── */
+initQuestions();
+
+// Restore session on page load
+(function restoreSession(){
+  const session=LS.get('quizmania_session');
+  if(!session)return;
+  if(session.type==='admin'){isAdmin=true;document.getElementById('navUser').textContent='🛡 Quizmaster';navigate('admin-dash')}
+  else if(session.type==='player'){
+    const player=getPlayers().find(p=>p.code===session.code);
+    if(player){currentPlayer=player;document.getElementById('navUser').textContent=player.name;navigate('player-dash')}
+    else{LS.set('quizmania_session',null)}
+  }
+})();
+</script>
+</body>
+</html>
