@@ -353,6 +353,23 @@ tr:hover td{background:rgba(255,255,255,.02)}
 /* ─── DIVIDER ─── */
 .divider{height:1px;background:linear-gradient(90deg,transparent,var(--glass-border),transparent);margin:40px 0}
 
+/* ─── FIELD ERRORS (BUG 4/5/8) ─── */
+.field-error{color:#E24B4A;font-size:.78rem;margin-top:5px;display:flex;align-items:center;gap:4px;animation:pageIn .2s ease}
+.field-error::before{content:'⚠'}
+.input-error{border:1.5px solid #E24B4A!important;box-shadow:0 0 0 2px rgba(226,75,74,.12)!important}
+
+/* ─── TEAM JOIN PROMPT (BUG 6) ─── */
+.team-join-prompt{margin-top:10px;padding:12px 16px;background:rgba(0,245,255,.06);border:1px solid rgba(0,245,255,.2);border-radius:10px;font-size:.84rem;color:var(--text-mid);animation:pageIn .25s ease}
+.team-join-prompt p{margin-bottom:10px;line-height:1.5}
+.team-join-btns{display:flex;gap:8px}
+
+/* ─── DANGER CONFIRM MODAL (BUG 3) ─── */
+.danger-confirm-input{width:100%;padding:12px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(244,63,94,.3);border-radius:10px;color:var(--text);font-size:.9rem;font-family:var(--font-mono);letter-spacing:1px;text-align:center;margin:16px 0;transition:border .2s}
+.danger-confirm-input:focus{outline:none;border-color:rgba(244,63,94,.7);box-shadow:0 0 0 3px rgba(244,63,94,.1)}
+.danger-confirm-input::placeholder{color:var(--text-dim);font-family:var(--font-body);letter-spacing:0}
+.btn-danger-confirm{opacity:.4;cursor:not-allowed;transition:all .2s}
+.btn-danger-confirm.enabled{opacity:1;cursor:pointer}
+
 /* ─── PRINT ─── */
 @media print{body{background:#fff;color:#000}.navbar,canvas,.btn{display:none!important}.card{border:1px solid #ddd;background:#f8f8f8;backdrop-filter:none}.big-code{color:#000;text-shadow:none}}
 
@@ -440,8 +457,18 @@ tr:hover td{background:rgba(255,255,255,.02)}
       </div>
       <div class="card" id="regFormCard">
         <div class="form-group"><label>Full Name</label><input id="regName" placeholder="Your full name" required></div>
-        <div class="form-group"><label>Phone Number</label><input id="regPhone" type="tel" placeholder="10-digit phone number" required></div>
-        <div class="form-group"><label>College Name</label><input id="regCollege" placeholder="Your college name" required></div>
+        <div class="form-group"><label>Phone Number</label><input id="regPhone" type="tel" maxlength="10" placeholder="10-digit phone number" required></div><!-- FIX: Bug 5 — phone input type=tel, maxlength=10 -->
+        <div class="form-group"><label>College Name</label><input id="regCollege" list="college-suggestions" placeholder="Your college name" required></div>
+        <datalist id="college-suggestions">
+          <option value="Bengaluru City University">
+          <option value="Bangalore Institute of Technology">
+          <option value="RV College of Engineering">
+          <option value="PES University">
+          <option value="MS Ramaiah Institute of Technology">
+          <option value="BMS College of Engineering">
+          <option value="Dayananda Sagar College of Engineering">
+          <option value="JSS Academy of Technical Education">
+        </datalist>
         <div class="form-group"><label>Team Name</label><input id="regTeam" placeholder="Choose a team name" required></div>
         <button class="btn btn-neon" style="width:100%;justify-content:center;padding:13px" onclick="registerPlayer()">Register →</button>
       </div>
@@ -451,8 +478,10 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <p style="color:var(--text-dim);font-size:.83rem;margin-bottom:20px">Your unique access code</p>
         <div class="big-code" id="regCode"></div>
         <p class="note">⚠ Save this code — you'll need it to login</p>
+        <p id="reg-redirect-timer" style="font-size:13px; color: var(--text-dim); margin-top: 8px;"></p>
         <div style="display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap">
-          <button class="btn btn-outline btn-sm" onclick="window.print()">Print Code</button>
+          <button class="btn btn-success btn-sm" id="waShareBtn" onclick="shareWhatsApp()">Share to WhatsApp</button>
+          <button class="btn btn-outline btn-sm" id="printCodeBtn" disabled onclick="guardedPrint()">Print Code</button><!-- FIX: Bug 17 — disabled by default -->
           <button class="btn btn-violet btn-sm" onclick="navigate('player-login')">Go to Login →</button>
         </div>
       </div>
@@ -466,8 +495,22 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="auth-wrap">
       <div class="auth-header"><h2>PLAYER LOGIN</h2><p>Enter your access code to join the quiz</p></div>
       <div class="card">
-        <div class="form-group"><label>Access Code</label><input id="loginCode" placeholder="e.g. QM-X4K2" style="font-family:var(--font-mono);text-transform:uppercase;letter-spacing:3px"></div>
-        <button class="btn btn-neon" style="width:100%;justify-content:center;padding:13px" onclick="playerLogin()">Login →</button>
+        <div class="form-group">
+          <label>Access Code</label>
+          <input id="loginCode" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="text" placeholder="e.g. QM-X4K2" style="font-family:var(--font-mono);text-transform:uppercase;letter-spacing:3px">
+          <a href="#" style="font-size:12px;color:var(--neon);margin-top:6px;display:inline-block;text-decoration:none" onclick="document.getElementById('recoveryForm').style.display='block';return false;">Lost your code? Find it here →</a>
+        </div>
+        <div id="recoveryForm" style="display:none;margin-bottom:16px;padding:12px;border:1px solid var(--glass-border);border-radius:8px">
+          <p style="font-size:13px;color:var(--text-mid);margin-bottom:8px">Enter details to recover code</p>
+          <input id="recName" placeholder="Full Name" style="width:100%;padding:8px;margin-bottom:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--text);border-radius:4px">
+          <input id="recPhone" placeholder="Phone Number" style="width:100%;padding:8px;margin-bottom:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--text);border-radius:4px">
+          <button class="btn btn-outline btn-sm" style="width:100%;justify-content:center" onclick="recoverCode()">Find My Code</button>
+          <div id="recResult" style="margin-top:8px;font-size:12px;text-align:center"></div>
+        </div>
+        <button class="btn btn-neon" id="playerLoginBtn" style="width:100%;justify-content:center;padding:13px" onclick="playerLogin()">Login →</button>
+        <div style="margin-top:12px;text-align:center">
+          <label style="font-size:13px;color:var(--text-dim)"><input type="checkbox" id="keepLoggedIn"> Keep me logged in</label>
+        </div>
         <p style="text-align:center;margin-top:16px;font-size:.82rem;color:var(--text-dim)">No account? <a href="#" style="color:var(--neon);text-decoration:none" onclick="navigate('register')">Register here</a></p>
       </div>
       <div style="text-align:center;margin-top:16px">
@@ -592,6 +635,14 @@ tr:hover td{background:rgba(255,255,255,.02)}
             <span><span style="color:var(--text-dim);font-size:.7rem;text-transform:uppercase;letter-spacing:1px">Date</span><br>April 17–18, 2026</span>
             <span><span style="color:var(--text-dim);font-size:.7rem;text-transform:uppercase;letter-spacing:1px">Hosted by</span><br>Dept. of Computer Science, Bengaluru City University</span>
           </div>
+          <h3 style="font-family:var(--font-head);font-size:1.2rem;letter-spacing:1px;margin-bottom:14px;color:var(--text-dim);margin-top:20px">GAMEPLAY SETTINGS</h3>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:rgba(255,255,255,0.03);border:1px solid var(--glass-border);border-radius:8px">
+            <div>
+              <div style="font-weight:600">Player Leaderboard Visibility</div>
+              <div style="font-size:12px;color:var(--text-dim)">Show or hide the leaderboard on player dashboards</div>
+            </div>
+            <button id="lbToggleBtn" class="toggle" onclick="togglePlayerLeaderboard()"></button>
+          </div>
         </div>
         <div class="card card-violet">
           <h3 style="font-family:var(--font-head);font-size:1.2rem;letter-spacing:1px;margin-bottom:12px;color:var(--warning)">⚠ DANGER ZONE</h3>
@@ -646,6 +697,117 @@ tr:hover td{background:rgba(255,255,255,.02)}
 <!-- Add the Realtime Database product -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script>
+/*
+ * PARTICIPANT-SIDE BUG FIXES — Quiz Mania v1.2
+ * ─────────────────────────────────────────────
+ * R-1: Access code uniqueness guarantee (crypto.getRandomValues + collision check)
+ * R-2: Access code recovery via name+phone lookup + WhatsApp share
+ * R-3: Duplicate registration prevention by phone number
+ * R-4: College name normalisation + datalist autocomplete
+ * R-5: Registration success auto-redirect countdown (30s)
+ * L-1: Player session via sessionStorage + optional persistent login
+ * L-2: Login brute-force protection (5 attempts → 60s lockout)
+ * L-3: Access code case normalisation + mobile input attributes
+ * L-4: Auto-restore session on page reload
+ * D-1: Per-question countdown timer with red flash at 10s
+ * D-2: Answer lock-in on first click — no re-selection allowed
+ * D-3: Answer persistence to localStorage — survives page refresh
+ * D-4: Finale round two-tap confirmation before answer lock-in
+ * D-5: Player logout button
+ * D-6: Player status bar (team, round, score, answered count)
+ * LB-1: Leaderboard visibility toggle (admin-controlled)
+ * LB-2: Player's own team highlighted with "You" badge
+ * S-1: localStorage obfuscation (btoa encoding) for all stored data
+ * S-2: Correct answers stripped from player-facing question objects
+ * S-3: Score tamper detection via checksum
+ */
+
+// FIX: Bug 14 — XSS sanitization helper
+function sanitize(str){
+  if(str===null||str===undefined) return '';
+  const div=document.createElement('div');
+  div.textContent=String(str);
+  return div.innerHTML;
+}
+
+// FIX: Bug 1 — SHA-256 password hashing via Web Crypto API
+async function hashPassword(password){
+  const msgBuffer=new TextEncoder().encode(password);
+  const hashBuffer=await crypto.subtle.digest('SHA-256',msgBuffer);
+  const hashArray=Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// FIX: Bug 2 — Admin session guard via sessionStorage
+function isAdminAuthenticated(){
+  return sessionStorage.getItem('adminSessionToken')!==null;
+}
+function requireAdminAuth(){
+  if(!isAdminAuthenticated()){
+    isAdmin=false;
+    toast('Admin session expired. Please log in again.','error');
+    navigate('admin-login');
+    return false;
+  }
+  return true;
+}
+
+// FIX: Bug 4 — Field error helpers
+function showFieldError(fieldId,message){
+  const field=document.getElementById(fieldId);
+  if(!field)return;
+  clearFieldError(fieldId);
+  field.classList.add('input-error');
+  const err=document.createElement('div');
+  err.className='field-error';
+  err.id=fieldId+'-error';
+  err.textContent=message;
+  field.parentNode.appendChild(err);
+  field.addEventListener('input',function handler(){clearFieldError(fieldId);field.removeEventListener('input',handler)},{once:true});
+}
+function clearFieldError(fieldId){
+  const field=document.getElementById(fieldId);
+  if(field)field.classList.remove('input-error');
+  const existing=document.getElementById(fieldId+'-error');
+  if(existing)existing.remove();
+}
+
+// FIX: Bug 3 — Danger zone confirmation modal with DELETE input
+function showDangerConfirmModal(warningMsg,actionFn){
+  const modalHtml=`<h3 style="font-family:var(--font-head);font-size:1.5rem;letter-spacing:2px;margin-bottom:12px;color:var(--danger)">⚠ CONFIRM DESTRUCTIVE ACTION</h3>
+    <p style="margin-bottom:16px;color:var(--text-mid);font-size:.9rem;line-height:1.65">${warningMsg}</p>
+    <input class="danger-confirm-input" id="dangerConfirmInput" placeholder='Type "DELETE" to confirm' autocomplete="off" spellcheck="false">
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn btn-danger btn-danger-confirm" id="dangerConfirmBtn" onclick="executeDangerAction()">Confirm</button>
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+    </div>`;
+  showModal(modalHtml);
+  window._dangerActionFn=actionFn;
+  const inp=document.getElementById('dangerConfirmInput');
+  const btn=document.getElementById('dangerConfirmBtn');
+  inp.addEventListener('input',()=>{
+    if(inp.value==='DELETE'){btn.classList.add('enabled')}
+    else{btn.classList.remove('enabled')}
+  });
+  // Escape key closes modal
+  const escHandler=e=>{if(e.key==='Escape'){closeModal();document.removeEventListener('keydown',escHandler)}};
+  document.addEventListener('keydown',escHandler);
+}
+function executeDangerAction(){
+  const inp=document.getElementById('dangerConfirmInput');
+  if(!inp||inp.value!=='DELETE'){toast('Type DELETE to confirm','error');return;}
+  if(typeof window._dangerActionFn==='function')window._dangerActionFn();
+  closeModal();
+  window._dangerActionFn=null;
+}
+
+// FIX: Bug 17 — Print Code button guard
+function guardedPrint(){
+  const codeEl=document.getElementById('regCode');
+  if(!codeEl||!codeEl.textContent.trim()){toast('Access code not ready yet. Please wait.','error');return;}
+  window.print();
+}
+
 /* ─── ANTI-CHEAT & SECURITY ─── */
 (function(){
   // Prevent Right Click
@@ -690,7 +852,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 /* ─── TOAST ─── */
 function toast(msg,type='info'){
   const t=document.createElement('div');t.className='toast toast-'+type;
-  t.innerHTML=`<span>${type==='success'?'✓':type==='error'?'✗':'ℹ'}</span>${msg}`;
+  t.innerHTML=`<span>${type==='success'?'✓':type==='error'?'✗':'ℹ'}</span>${sanitize(msg)}`; // FIX: Bug 14 — sanitize toast message
   document.getElementById('toasts').appendChild(t);
   setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(110%)';t.style.transition='all .3s';setTimeout(()=>t.remove(),300)},3200)}
 
@@ -727,7 +889,29 @@ try {
 } catch(e) { console.error("Firebase init error", e); }
 
 /* ─── DATA STORE LAYER ─── */
-const LS={get:k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
+const STORAGE_KEY_PREFIX = 'qm_';
+const ENCODE_SALT = 'INNOVEX2026_QUIZMANIA';
+
+function encodeStorageValue(value) {
+  const str = JSON.stringify(value);
+  return btoa(unescape(encodeURIComponent(str + ENCODE_SALT)));
+}
+
+function decodeStorageValue(encoded) {
+  try {
+    const decoded = decodeURIComponent(escape(atob(encoded)));
+    const str = decoded.slice(0, -ENCODE_SALT.length);
+    return JSON.parse(str);
+  } catch {
+    return null;
+  }
+}
+
+// FIX: Bug S-1 — localStorage obfuscation
+const LS={
+  get:k=>{try{const r=localStorage.getItem(STORAGE_KEY_PREFIX+k);return r?decodeStorageValue(r):null}catch{return null}},
+  set:(k,v)=>{try{localStorage.setItem(STORAGE_KEY_PREFIX+k,encodeStorageValue(v))}catch{}}
+};
 
 const Memory = {};
 const Sync = {
@@ -796,51 +980,296 @@ function updateCountdown(){
      <div class="unit"><span class="num">${String(secs).padStart(2,'0')}</span><span class="lbl">Secs</span></div>`}
 updateCountdown();setInterval(updateCountdown,1000);
 
+/* ─── APP BOOTSTRAP ─── */
+document.addEventListener('DOMContentLoaded', () => {
+  const savedSession = getPlayerSession();
+  if (savedSession) {
+    const player = getPlayers().find(p => p.code === savedSession.code);
+    if (player) {
+      currentPlayer = player;
+      isAdmin = false;
+      document.getElementById('navUser').textContent = player.name;
+      navigate('player-dash');
+      return;
+    }
+  }
+});
+
+/* ─── SESSION LOGIC ─── */
+function getPlayerSession() {
+  try {
+    let raw = sessionStorage.getItem('qm_playerSession');
+    if (!raw) raw = localStorage.getItem('qm_playerSession');
+    if (!raw) return null;
+    const session = JSON.parse(raw);
+    if (Date.now() > session.expiresAt) {
+      sessionStorage.removeItem('qm_playerSession');
+      localStorage.removeItem('qm_playerSession');
+      return null;
+    }
+    // auto-restore to session if found in local
+    sessionStorage.setItem('qm_playerSession', raw);
+    return session;
+  } catch {
+    return null;
+  }
+}
+
 /* ─── NAVIGATION ─── */
 function navigate(page){
+  // FIX: Bug 2 — Admin route guard
+  if(page==='admin-dash'&&!isAdminAuthenticated()){
+    isAdmin=false;toast('Admin session required. Please log in.','error');
+    page='admin-login';
+  }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   const el=document.getElementById('page-'+page);if(el)el.classList.add('active');
   const btn=document.getElementById('navAuthBtn'),hb=document.getElementById('hamburgerBtn');
-  if(page==='admin-dash'){btn.textContent='Logout';btn.onclick=()=>{isAdmin=false;LS.set('quizmania_session',null);navigate('landing');toast('Logged out','info')};hb.style.display='inline-block';renderPlayersTable();renderRoundsGrid();renderQuestions();renderAdminLeaderboard()}
-  else if(page==='player-dash'){btn.textContent='Logout';btn.onclick=()=>{currentPlayer=null;LS.set('quizmania_session',null);navigate('landing');toast('Logged out','info')};hb.style.display='none';loadPlayerDash()}
-  else{btn.textContent='Login';btn.onclick=()=>navigate('player-login');hb.style.display='none';document.getElementById('navUser').textContent=''}
-  if(page==='register'){document.getElementById('regFormCard').style.display='block';document.getElementById('regResult').style.display='none'}
+  if(page==='admin-dash'){if(btn)btn.textContent='Logout';if(btn)btn.onclick=()=>{isAdmin=false;sessionStorage.removeItem('adminSessionToken');LS.set('quizmania_session',null);navigate('landing');toast('Logged out','info')};if(hb)hb.style.display='inline-block';renderPlayersTable();renderRoundsGrid();renderQuestions();renderAdminLeaderboard()}
+  else if(page==='player-dash'){if(btn)btn.textContent='Logout';if(btn)btn.onclick=()=>{sessionStorage.removeItem('qm_playerSession');localStorage.removeItem('qm_playerSession');currentPlayer=null;LS.set('quizmania_session',null);navigate('landing');toast('Logged out','info')};if(hb)hb.style.display='none';loadPlayerDash()}
+  else{if(btn)btn.textContent='Login';if(btn)btn.onclick=()=>navigate('player-login');if(hb)hb.style.display='none';const nu=document.getElementById('navUser');if(nu)nu.textContent=''}
+  if(page==='register') {
+    const rf = document.getElementById('regFormCard'); if(rf) rf.style.display='block';
+    const rr = document.getElementById('regResult'); if(rr) rr.style.display='none';
+    if(window._regInterval) clearInterval(window._regInterval);
+  }
   window.scrollTo(0,0)}
 
 function toggleSidebar(){document.getElementById('adminSidebar').classList.toggle('open')}
 function showAdminTab(tab,el){
+  if(!requireAdminAuth())return; // FIX: Bug 2 — guard admin tabs
   document.querySelectorAll('.admin-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
   document.querySelectorAll('.sidebar a').forEach(a=>a.classList.remove('active'));
   if(el)el.classList.add('active');
   if(tab==='leaderboard')renderAdminLeaderboard();if(tab==='players')renderPlayersTable();if(tab==='questions')renderQuestions();if(tab==='rounds')renderRoundsGrid();
+  if(tab==='settings') {
+    const isVis = LS.get('leaderboardVisible') !== false;
+    const btn = document.getElementById('lbToggleBtn');
+    if(btn) { if(isVis) btn.classList.add('on'); else btn.classList.remove('on'); }
+  }
   document.getElementById('adminSidebar').classList.remove('open')}
 
+function togglePlayerLeaderboard() {
+  const isVis = LS.get('leaderboardVisible') !== false;
+  LS.set('leaderboardVisible', !isVis);
+  const btn = document.getElementById('lbToggleBtn');
+  if (btn) {
+    if (!isVis) btn.classList.add('on');
+    else btn.classList.remove('on');
+  }
+  toast(`Leaderboard is now ${!isVis ? 'visible' : 'hidden'}`, 'info');
+}
+
 /* ─── REGISTRATION ─── */
-function genCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let r='QM-';for(let i=0;i<4;i++)r+=c[Math.floor(Math.random()*c.length)];return r}
+function genCode() {
+  const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let r = '';
+  const a = new Uint8Array(8);
+  crypto.getRandomValues(a);
+  a.forEach(b => { r += c[b % c.length]; });
+  return r;
+}
+
+function normalizeCollegeName(name) {
+  return name.trim().toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
+// FIX: Bugs 4,5,6,7 — Registration with full validation
 function registerPlayer(){
-  const name=document.getElementById('regName').value.trim(),phone=document.getElementById('regPhone').value.trim(),college=document.getElementById('regCollege').value.trim(),team=document.getElementById('regTeam').value.trim();
-  if(!name||!phone||!college||!team){toast('Please fill all fields','error');return}
-  if(!/^\d{10}$/.test(phone)){toast('Enter a valid 10-digit phone number','error');return}
-  const players=getPlayers();if(players.find(p=>p.phone===phone)){toast('This phone number is already registered','error');return}
+  // Clear previous errors
+  ['regName','regPhone','regCollege','regTeam'].forEach(clearFieldError);
+  const oldPrompt=document.getElementById('teamJoinPrompt');if(oldPrompt)oldPrompt.remove();
+
+  const name=document.getElementById('regName').value.trim();
+  const phone=document.getElementById('regPhone').value.trim();
+  const college=normalizeCollegeName(document.getElementById('regCollege').value);
+  const team=document.getElementById('regTeam').value.trim();
+
+  // FIX: Bug 4 — Blank field validation
+  let valid=true;
+  if(!name){showFieldError('regName','Full name is required.');valid=false;}
+  if(!phone){showFieldError('regPhone','Phone number is required.');valid=false;}
+  if(!college){showFieldError('regCollege','College name is required.');valid=false;}
+  if(!team){showFieldError('regTeam','Team name is required.');valid=false;}
+  if(!valid)return;
+
+  // FIX: Bug 5 — Phone number format validation (Indian 10-digit)
+  const cleanPhone=phone.replace(/[\s\-]/g,'');
+  const phoneRegex=/^[6-9]\d{9}$/;
+  if(!phoneRegex.test(cleanPhone)){showFieldError('regPhone','Enter a valid 10-digit Indian mobile number.');return;}
+
+  const players=getPlayers();
+  if(players.find(p=>p.phone===cleanPhone)){
+    showFieldError('regPhone', 'This phone number is already registered. Use the "Lost your code?" link on the login page to retrieve your code.');
+    return;
+  }
+
+  // FIX: Bug 6 — Duplicate team name handling
+  const existingTeamMembers=players.filter(p=>p.team.toLowerCase()===team.toLowerCase());
+  if(existingTeamMembers.length>0){
+    // FIX: Bug 7 — Team size cap (max 3 members)
+    if(existingTeamMembers.length>=3){
+      showFieldError('regTeam','This team already has 3 members (maximum). Choose or create a different team.');
+      return;
+    }
+    // Show join prompt
+    const existingPrompt=document.getElementById('teamJoinPrompt');
+    if(!existingPrompt){
+      const prompt=document.createElement('div');
+      prompt.className='team-join-prompt';
+      prompt.id='teamJoinPrompt';
+      const originalTeamName=existingTeamMembers[0].team; // preserve original casing
+      prompt.innerHTML=`<p>A team named \"<strong>${sanitize(originalTeamName)}</strong>\" already exists (${existingTeamMembers.length}/3 members). Are you joining this team?</p>
+        <div class="team-join-btns">
+          <button class="btn btn-neon btn-sm" onclick="confirmJoinTeam('${sanitize(originalTeamName).replace(/'/g,"\\\'")}','${sanitize(name).replace(/'/g,"\\\'")}','${cleanPhone}','${sanitize(college).replace(/'/g,"\\\'")}')">✅ Yes, join this team</button>
+          <button class="btn btn-outline btn-sm" onclick="declineJoinTeam()">No, use a different name</button>
+        </div>`;
+      document.getElementById('regTeam').parentNode.appendChild(prompt);
+    }
+    return;
+  }
+
+  // All checks passed — register
+  finalizeRegistration(name,cleanPhone,college,team);
+}
+
+function confirmJoinTeam(teamName,name,phone,college){
+  const prompt=document.getElementById('teamJoinPrompt');if(prompt)prompt.remove();
+  finalizeRegistration(name,phone,college,teamName);
+}
+function declineJoinTeam(){
+  const prompt=document.getElementById('teamJoinPrompt');if(prompt)prompt.remove();
+  document.getElementById('regTeam').value='';document.getElementById('regTeam').focus();
+}
+
+function finalizeRegistration(name,phone,college,team){
+  const players=getPlayers();
   let code;do{code=genCode()}while(players.find(p=>p.code===code));
   const player={name,phone,college,team,code,score:0,quizDone:false};players.push(player);savePlayers(players);
   const scores=getScores();if(!scores[team])scores[team]=0;saveScores(scores);
   document.getElementById('regFormCard').style.display='none';document.getElementById('regResult').style.display='block';
-  document.getElementById('regCode').textContent=code;toast('Registration successful!','success')}
+  document.getElementById('regCode').textContent=code;
+  window._lastGeneratedCode = code; // for whatsapp share
+  // FIX: Bug 17 — Enable print button after code is generated
+  const printBtn=document.getElementById('printCodeBtn');if(printBtn)printBtn.disabled=false;
+  toast('Registration successful!','success');
+
+  // FIX: Bug R-5 — Redirect timer
+  let countdown = 30;
+  const timerEl = document.getElementById('reg-redirect-timer');
+  timerEl.textContent = `Redirecting to login in ${countdown}s...`;
+  window._regInterval = setInterval(() => {
+    countdown--;
+    timerEl.textContent = `Redirecting to login in ${countdown}s...`;
+    if (countdown <= 0) {
+      clearInterval(window._regInterval);
+      navigate('player-login');
+    }
+  }, 1000);
+}
+
+function shareWhatsApp() {
+  const msg = encodeURIComponent(`Your Quiz Mania access code: ${window._lastGeneratedCode}\nKeep this safe — you need it to login!`);
+  window.open(`https://wa.me/?text=${msg}`, '_blank');
+}
+
+/* ─── RECOVERY ─── */
+function recoverCode() {
+  const name = document.getElementById('recName').value.trim().toLowerCase();
+  const phone = document.getElementById('recPhone').value.trim().replace(/[\s\-]/g,'');
+  const res = document.getElementById('recResult');
+  
+  if(!name || !phone) {
+    res.textContent = 'Please enter name and phone.';
+    res.style.color = 'var(--danger)';
+    return;
+  }
+  
+  const match = getPlayers().find(p => p.name.trim().toLowerCase() === name && p.phone === phone);
+  if (match) {
+    res.innerHTML = `<span style="color:var(--success)">Found! Your code is: <strong>${match.code}</strong></span>`;
+    document.getElementById('recResult').style.borderColor = 'var(--success)';
+  } else {
+    res.textContent = 'No registration found. Please check your name and phone.';
+    res.style.color = 'var(--danger)';
+  }
+}
 
 /* ─── LOGIN ─── */
-function playerLogin(){
-  const code=document.getElementById('loginCode').value.trim().toUpperCase();
-  if(!code){toast('Enter your access code','error');return}
-  const player=getPlayers().find(p=>p.code===code);
-  if(!player){toast('Invalid access code','error');return}
-  currentPlayer=player;isAdmin=false;LS.set('quizmania_session',{type:'player',code:player.code});document.getElementById('navUser').textContent=player.name;toast('Welcome back, '+player.name+'!','success');navigate('player-dash')}
+function recordFailedAttempt() {
+  const key = 'qm_loginAttempts';
+  const raw = sessionStorage.getItem(key);
+  const data = raw ? JSON.parse(raw) : { count: 0, lockedUntil: 0 };
+  data.count += 1;
+  if (data.count >= 5) {
+    data.lockedUntil = Date.now() + (60 * 1000); // 60 second lockout
+    data.count = 0;
+  }
+  sessionStorage.setItem(key, JSON.stringify(data));
+  return data;
+}
 
-function adminLogin(){
+function isLoginLocked() {
+  const raw = sessionStorage.getItem('qm_loginAttempts');
+  if (!raw) return false;
+  const data = JSON.parse(raw);
+  return data.lockedUntil && Date.now() < data.lockedUntil;
+}
+
+// FIX: Bug 8 — Player login error messages
+function playerLogin(){
+  if (isLoginLocked()) {
+    toast('Too many attempts. Locked out for 60 seconds.', 'error');
+    return;
+  }
+  
+  clearFieldError('loginCode');
+  const code=document.getElementById('loginCode').value.trim().toUpperCase();
+  if(!code){showFieldError('loginCode','Please enter your access code.');return;}
+  const player=getPlayers().find(p=>p.code===code);
+  
+  if(!player){
+    recordFailedAttempt();
+    showFieldError('loginCode','Invalid access code. Please check your code and try again.');
+    return;
+  }
+  
+  sessionStorage.removeItem('qm_loginAttempts');
+  currentPlayer=player;
+  isAdmin=false;
+  
+  const sessionData = {
+    code: player.code,
+    loginTime: Date.now(),
+    expiresAt: Date.now() + (24 * 60 * 60 * 1000)
+  };
+  sessionStorage.setItem('qm_playerSession', JSON.stringify(sessionData));
+  if (document.getElementById('keepLoggedIn').checked) {
+    localStorage.setItem('qm_playerSession', JSON.stringify(sessionData));
+  }
+  
+  document.getElementById('navUser').textContent=player.name;
+  toast('Welcome back, '+sanitize(player.name)+'!','success');
+  navigate('player-dash');
+}
+
+// FIX: Bug 1 — Admin credentials hashed (SHA-256), Bug 2 — sessionStorage token
+const ADMIN_USER_HASH='0bc9b916a1ffc1daef367157c1c839622cd68717a3fcc25abdd78872e37a7ee3';
+const ADMIN_PASS_HASH='53c9a6aa69be616ce347307b11527e09d9abc8337b7a7739f23fae222c0e2e84';
+async function adminLogin(){
   const u=document.getElementById('adminUser').value.trim(),p=document.getElementById('adminPass').value;
-  if(u==='quizmaster'&&p==='innovex2026'){isAdmin=true;currentPlayer=null;LS.set('quizmania_session',{type:'admin'});document.getElementById('navUser').textContent='🛡 Quizmaster';toast('Admin access granted','success');navigate('admin-dash')}
-  else{toast('Invalid admin credentials','error')}}
+  if(!u||!p){toast('Enter both username and password','error');return;}
+  const uHash=await hashPassword(u);
+  const pHash=await hashPassword(p);
+  if(uHash===ADMIN_USER_HASH&&pHash===ADMIN_PASS_HASH){
+    isAdmin=true;currentPlayer=null;
+    const token=crypto.randomUUID(); // FIX: Bug 2 — generate session token
+    sessionStorage.setItem('adminSessionToken',token);
+    LS.set('quizmania_session',{type:'admin'});
+    document.getElementById('navUser').textContent='\ud83d\udee1 Quizmaster';
+    toast('Admin access granted','success');navigate('admin-dash');
+  } else {toast('Invalid admin credentials','error');}}
 
 /* ─── DEFAULT QUESTIONS ─── */
 const DEFAULT_QUESTIONS=[
@@ -1519,11 +1948,82 @@ function initQuestions(){
   if(added)saveQuestions(existing);
 }
 
+// FIX: Bug S-3 — Score tampering checksum
+function computeScoreChecksum(accessCode, score) {
+  const salted = accessCode + score + 'INNOVEX2026_QUIZMANIA_CHECKSUM';
+  let h = 0;
+  for(let i=0; i<salted.length; i++) {
+    h = Math.imul(31, h) + salted.charCodeAt(i) | 0;
+  }
+  return h;
+}
+
 /* ─── PLAYER DASHBOARD ─── */
+let playerDashPollInterval=null; // FIX: Bug 13 — polling reference
+let playerDashStatusInterval=null; // FIX: Bug D-6 — status bar reference
+
+function refreshStatusBar() {
+  const sb = document.getElementById('player-status-bar');
+  if (!sb || !currentPlayer) return;
+  const ar = getActiveRound() || 'None';
+  let ansCount = 0;
+  try {
+    const saved = LS.get('answers_' + currentPlayer.code);
+    if (saved) ansCount = Object.keys(saved).length;
+  } catch(e) {}
+  
+  // Check checksum S-3
+  const expectedHash = computeScoreChecksum(currentPlayer.code, currentPlayer.score);
+  if (currentPlayer.scoreChecksum !== undefined && currentPlayer.scoreChecksum !== expectedHash) {
+    currentPlayer.score = 0;
+    currentPlayer.scoreChecksum = computeScoreChecksum(currentPlayer.code, 0);
+    const players = getPlayers();
+    const idx = players.findIndex(p=>p.phone===currentPlayer.phone);
+    if(idx>-1){players[idx].score=0;players[idx].scoreChecksum=currentPlayer.scoreChecksum;savePlayers(players);}
+    toast('Score integrity issue detected. Score reset to 0.', 'error');
+  }
+  
+  sb.innerHTML = `
+    <div><span style="color:var(--text-dim)">Round:</span> <strong style="color:var(--neon)">${sanitize(ar)}</strong></div>
+    <div><span style="color:var(--text-dim)">Score:</span> <strong style="color:var(--neon)">${currentPlayer.score}</strong></div>
+    <div><span style="color:var(--text-dim)">Answered:</span> <strong>${ansCount}</strong></div>
+  `;
+}
+
 function loadPlayerDash(){
   if(!currentPlayer)return;
-  document.getElementById('dashWelcome').textContent='Welcome back, '+currentPlayer.name+'!';
+  document.getElementById('dashWelcome').textContent='Welcome back, '+currentPlayer.name+'!'; // FIX: Bug 14 — textContent is already safe
   document.getElementById('dashTeam').textContent='Team: '+currentPlayer.team+' · '+currentPlayer.college;
+
+  // FIX: Bug D-5 — Player logout button
+  if(!document.getElementById('player-logout-btn')) {
+    const loBtn = document.createElement('button');
+    loBtn.id = 'player-logout-btn';
+    loBtn.className = 'btn btn-outline btn-sm';
+    loBtn.style.marginTop = '8px';
+    loBtn.textContent = 'Logout';
+    loBtn.onclick = () => {
+      sessionStorage.removeItem('qm_playerSession');
+      localStorage.removeItem('qm_playerSession');
+      currentPlayer=null;
+      LS.set('quizmania_session',null);
+      navigate('landing');
+      toast('Logged out', 'info');
+    };
+    document.querySelector('.dash-info').appendChild(loBtn);
+  }
+
+  // FIX: Bug D-6 — Player status bar inject
+  let sb = document.getElementById('player-status-bar');
+  if(!sb) {
+    sb = document.createElement('div');
+    sb.id = 'player-status-bar';
+    sb.style.cssText = 'background:rgba(255,255,255,0.03); border:1px solid var(--glass-border); border-radius:8px; padding:12px; margin-top:20px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; font-family:var(--font-mono);';
+    document.getElementById('dashContent').parentNode.insertBefore(sb, document.getElementById('dashContent'));
+    if (playerDashStatusInterval) clearInterval(playerDashStatusInterval);
+    playerDashStatusInterval = setInterval(refreshStatusBar, 3000);
+  }
+  refreshStatusBar();
   const ar=getActiveRound(),rs=document.getElementById('dashRoundStatus'),dc=document.getElementById('dashContent'),qa=document.getElementById('quizArea');
   if(ar){rs.textContent=ar+' — Active';rs.className='round-badge badge-active'}
   else{rs.textContent='No active round';rs.className='round-badge badge-inactive'}
@@ -1531,11 +2031,14 @@ function loadPlayerDash(){
   const quals=getQualifications();
   const isQualified = !ar || !quals[ar] || quals[ar].includes(currentPlayer.team);
 
+  // FIX: Bug 13 — Clear any previous poll interval
+  if(playerDashPollInterval){clearInterval(playerDashPollInterval);playerDashPollInterval=null;}
+
   if(!isQualified){
     dc.innerHTML=`<div class="card card-glow" style="text-align:center;padding:36px 24px;border-color:rgba(244,63,94,.4);box-shadow:0 0 20px rgba(244,63,94,.1)">
       <div style="font-size:2.5rem;margin-bottom:12px">☠</div>
       <h3 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;color:var(--danger);margin-bottom:8px">ELIMINATED</h3>
-      <p style="color:var(--text-dim)">Thank you for participating! Your team did not advance to the ${ar} round.</p>
+      <p style="color:var(--text-dim)">Thank you for participating! Your team did not advance to the ${sanitize(ar)} round.</p>
       <p style="color:var(--text-dim);font-size:.8rem;margin-top:8px">Watch the live leaderboards below.</p></div>`;
     qa.style.display='none'}
   else if(ar==='Preliminary'&&!currentPlayer.quizDone){
@@ -1554,38 +2057,103 @@ function loadPlayerDash(){
     qa.style.display='none'}
   else if(ar){
     dc.innerHTML=`<div class="card" style="text-align:center;padding:32px">
-      <h3 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;margin-bottom:8px">${ar} ROUND</h3>
+      <h3 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;margin-bottom:8px">${sanitize(ar)} ROUND</h3>
       <p style="color:var(--text-dim);margin-top:8px">This round is managed by the quizmaster. Follow instructions on screen!</p></div>`;
     qa.style.display='none'}
   else{
+    // FIX: Bug 13 — Friendly waiting message instead of indefinite loading
     dc.innerHTML=`<div class="card" style="text-align:center;padding:32px">
       <div style="font-size:2rem;margin-bottom:12px">⏳</div>
-      <p style="color:var(--text-dim)">Round not started yet. Stay tuned!</p></div>`;
-    qa.style.display='none'}
+      <p style="color:var(--text-mid);font-size:.92rem;line-height:1.6">Waiting for the quiz to begin. Please stand by — the quizmaster will start the round shortly!</p>
+      <p style="color:var(--text-dim);font-size:.75rem;margin-top:10px">This page auto-refreshes every 5 seconds.</p></div>`;
+    qa.style.display='none';
+    // FIX: Bug 13 — Poll for active round every 5 seconds
+    playerDashPollInterval=setInterval(()=>{
+      if(getActiveRound()){clearInterval(playerDashPollInterval);playerDashPollInterval=null;loadPlayerDash();}
+    },5000);
+  }
   renderPlayerLeaderboard()}
 
+// FIX: Bug 18 — Player leaderboard empty state + auto-refresh
+let playerLbRefreshInterval=null;
 function renderPlayerLeaderboard(){
-  const scores=getScores(),sorted=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+  const isVis = LS.get('leaderboardVisible') !== false;
   const tbody=document.querySelector('#playerLeaderboard tbody');tbody.innerHTML='';
-  sorted.forEach(([team,score],i)=>{
-    const rankClass=i===0?'lb-rank-1':i===1?'lb-rank-2':i===2?'lb-rank-3':'';
-    const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1;
-    tbody.innerHTML+=`<tr class="${rankClass}"><td>${medal}</td><td>${team}</td><td class="mono" style="color:var(--neon)">${score}</td></tr>`})}
 
+  if(!isVis) {
+    tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:var(--text-dim);padding:24px">Leaderboard is currently hidden by the admin.</td></tr>';
+  } else {
+    const scores=getScores(),sorted=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+    if(sorted.length===0||sorted.every(([,s])=>s===0)){
+      // FIX: Bug 18 — Empty state
+      tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:var(--text-dim);padding:24px">No scores yet — the quiz hasn\'t started!</td></tr>';
+    } else {
+      let finalHtml = '';
+      sorted.forEach(([team,score],i)=>{
+        const rankClass=i===0?'lb-rank-1':i===1?'lb-rank-2':i===2?'lb-rank-3':'';
+        const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1;
+        const isMe = currentPlayer && currentPlayer.team === team;
+        const meStyle = isMe ? 'background:rgba(0,245,255,0.06); border-left:4px solid var(--neon);' : '';
+        const meBadge = isMe ? '<span style="margin-left:8px;font-size:0.7rem;background:var(--neon);color:#000;padding:2px 6px;border-radius:4px;font-weight:700">YOU</span>' : '';
+        const rowId = isMe ? 'id="my-lb-row"' : '';
+        finalHtml+=`<tr class="${rankClass}" style="${meStyle}" ${rowId}><td>${medal}</td><td>${sanitize(team)}${meBadge}</td><td class="mono" style="color:var(--neon)">${score}</td></tr>`}); 
+      tbody.innerHTML = finalHtml;
+      const el = document.getElementById('my-lb-row');
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }
+  
+  // FIX: Bug 18 — Auto-refresh player leaderboard every 10 seconds
+  if(!playerLbRefreshInterval){
+    playerLbRefreshInterval=setInterval(()=>{
+      if(currentPlayer&&document.getElementById('page-player-dash')?.classList.contains('active'))renderPlayerLeaderboard();
+      else{clearInterval(playerLbRefreshInterval);playerLbRefreshInterval=null;}
+    },10000);
+  }
+}
 /* ─── QUIZ ENGINE ─── */
 let quizTimer=null;
 function startQuiz(){
-  const questions=getQuestions().filter(q=>q.round==='Preliminary');
+  const ar=getActiveRound();
+  let questions=getQuestions().filter(q=>q.round===ar);
   if(questions.length===0){toast('No questions available','error');return}
-  const shuffled=questions.sort(()=>Math.random()-.5).slice(0,10);
-  quizState={questions:shuffled,current:0,score:0,answers:[],selected:null};
+  // FIX: Bug S-2 — Strip answers from player's view
+  const shuffled=questions.sort(()=>Math.random()-.5).slice(0,10).map(q => {
+    const cleaned = {...q};
+    delete cleaned.answer;
+    return cleaned;
+  });
+  
+  // FIX: Bug D-3 — Restore existing answers from localStorage if present
+  const prevAnswers = LS.get('answers_' + currentPlayer.code) || {};
+  let startIdx = 0;
+  for (let i=0; i<shuffled.length; i++) {
+    if (prevAnswers[shuffled[i].id] !== undefined) {
+      startIdx = i; // at least go to here
+    }
+  }
+
+  quizState={
+    questions:shuffled,
+    current:startIdx,
+    score:currentPlayer.score || 0, // pick up existing score
+    answers:prevAnswers,
+    selected:null,
+    tappedOnce:null
+  };
   document.getElementById('dashContent').style.display='none';document.getElementById('quizArea').style.display='block';renderQuestion()}
 
 function renderQuestion(){
   if(!quizState)return;
   const qa=document.getElementById('quizArea'),q=quizState.questions[quizState.current],total=quizState.questions.length,num=quizState.current+1;
   quizState.selected=null;
+  quizState.tappedOnce=null;
   const circ=2*Math.PI*30;
+  
+  // FIX: Bug D-2/D-3 — Check if already answered
+  const priorAns = quizState.answers[q.id];
+  const isAnswered = priorAns !== undefined;
+  
   qa.innerHTML=`<div class="quiz-wrap">
     <div class="quiz-meta"><span class="quiz-q-count">Question ${num} of ${total}</span></div>
     <div class="progress-track"><div class="progress-fill" id="qProg" style="width:${num/total*100}%"></div></div>
@@ -1594,23 +2162,67 @@ function renderQuestion(){
         <circle class="track" cx="36" cy="36" r="30"/>
         <circle class="fill" id="timerCircle" cx="36" cy="36" r="30" stroke-dasharray="${circ}" stroke-dashoffset="0"/>
       </svg>
-      <div class="timer-num" id="qTimer">30</div>
+      <div class="timer-num" id="qTimer">${isAnswered ? '0' : '30'}</div>
     </div>
     <div class="card">
       <p class="q-text">${q.q}</p>
       ${q.image?`<img src="${q.image}" class="q-img-quiz" alt="Question image">`:''}
-      <div class="q-options">${q.options.map((o,i)=>`<div class="q-opt" onclick="selectOption(${i})" id="opt${i}">
-        <span class="q-opt-letter">${String.fromCharCode(65+i)}</span>${o}</div>`).join('')}
+      <div class="q-options" id="qOptionsBlock">${q.options.map((o,i)=>{
+        let extraCls = '';
+        if (isAnswered && priorAns === i) extraCls = 'selected locked';
+        else if (isAnswered) extraCls = 'disabled';
+        return `<div class="q-opt ${extraCls}" ${isAnswered ? '' : `onclick="selectOption(${i})"`} id="opt${i}">
+        <span class="q-opt-letter">${String.fromCharCode(65+i)}</span>${o}</div>`;
+      }).join('')}
       </div>
     </div>
     <div class="q-nav"><button class="btn btn-neon" onclick="nextQuestion()" id="nextBtn">${num===total?'Finish Quiz':'Next →'}</button></div>
   </div>`;
-  startTimer()}
+  if (!isAnswered) startTimer();
+}
 
 function selectOption(i){
   if(!quizState)return;
-  document.querySelectorAll('.q-opt').forEach(o=>o.classList.remove('selected'));
-  document.getElementById('opt'+i).classList.add('selected');quizState.selected=i}
+  const timer = document.getElementById('qTimer');
+  if (timer && timer.textContent === '0') return; // FIX: Bug D-1 — disabled when 0
+  
+  const ar = getActiveRound();
+  
+  // FIX: Bug D-4 — Finale two-tap confirmation
+  if (ar === 'Finale') {
+    if (quizState.tappedOnce !== i) {
+      document.querySelectorAll('.q-opt').forEach(o=> { o.classList.remove('selected'); o.style.borderColor = ''; });
+      const el = document.getElementById('opt'+i);
+      el.classList.add('selected');
+      el.style.borderColor = 'orange'; // Warn user
+      toast('Tap again to LOCK your answer!', 'warning');
+      quizState.tappedOnce = i;
+      return;
+    }
+  }
+  
+  // Lock it in (D-2)
+  document.querySelectorAll('.q-opt').forEach(o=> {
+    o.classList.remove('selected');
+    o.classList.add('disabled');
+    o.style.borderColor = '';
+    o.onclick = null;
+  });
+  const el=document.getElementById('opt'+i);
+  el.classList.remove('disabled');
+  el.classList.add('selected');
+  el.classList.add('locked');
+  quizState.selected=i;
+  
+  // FIX: Bug D-3 — Score immediately and persisting
+  const q = quizState.questions[quizState.current];
+  quizState.answers[q.id] = i;
+  LS.set('answers_' + currentPlayer.code, quizState.answers);
+  checkAnswer();
+  
+  // Visual feedback for lock-in
+  toast('Answer locked in!', 'success');
+}
 
 function startTimer(){
   let t=30;clearInterval(quizTimer);
@@ -1623,14 +2235,44 @@ function startTimer(){
     else{el.classList.remove('danger');ring&&ring.classList.remove('danger')}
     if(t<=0){clearInterval(quizTimer);autoSubmit()}},1000)}
 
-function autoSubmit(){quizState.answers.push(quizState.selected);checkAnswer();
-  if(quizState.current<quizState.questions.length-1){quizState.current++;renderQuestion()}else{finishQuiz()}}
+function autoSubmit(){
+  // If not locked in, consider it missed
+  if (quizState.selected === null) {
+      const q = quizState.questions[quizState.current];
+      quizState.answers[q.id] = -1; // -1 means missed
+      LS.set('answers_' + currentPlayer.code, quizState.answers);
+  }
+  if(quizState.current<quizState.questions.length-1){quizState.current++;renderQuestion()}else{finishQuiz()}
+}
 
-function nextQuestion(){clearInterval(quizTimer);quizState.answers.push(quizState.selected);checkAnswer();
-  if(quizState.current<quizState.questions.length-1){quizState.current++;renderQuestion()}else{finishQuiz()}}
+function nextQuestion(){
+  clearInterval(quizTimer);
+  // Auto-lock if they hit next before answering
+  if (quizState.selected === null) {
+      const q = quizState.questions[quizState.current];
+      quizState.answers[q.id] = -1;
+      LS.set('answers_' + currentPlayer.code, quizState.answers);
+  }
+  if(quizState.current<quizState.questions.length-1){quizState.current++;renderQuestion()}else{finishQuiz()}
+}
 
 function hashOption(str){let h=0,s=str+"INNOVEX_SALT";for(let i=0;i<s.length;i++){h=(h<<5)-h+s.charCodeAt(i);h|=0;}return h.toString();}
-function checkAnswer(){const q=quizState.questions[quizState.current];if(quizState.selected!==null&&hashOption(q.options[quizState.selected])===q.answerHash)quizState.score++}
+function checkAnswer(){
+  const q=quizState.questions[quizState.current];
+  if(quizState.selected!==null&&hashOption(q.options[quizState.selected])===q.answerHash) {
+    quizState.score++;
+    currentPlayer.score = quizState.score;
+    // Update local real-time
+    const players = getPlayers();
+    const idx = players.findIndex(p=>p.phone===currentPlayer.phone);
+    if(idx>-1) {
+      players[idx].score = quizState.score;
+      players[idx].scoreChecksum = computeScoreChecksum(players[idx].code, players[idx].score);
+      currentPlayer.scoreChecksum = players[idx].scoreChecksum;
+      savePlayers(players);
+    }
+  }
+}
 
 function finishQuiz(){
   clearInterval(quizTimer);confetti();
@@ -1638,7 +2280,7 @@ function finishQuiz(){
   document.getElementById('quizArea').innerHTML=`<div class="quiz-wrap">
     <div class="card card-glow result-card">
       <div style="font-size:2.5rem;margin-bottom:16px">${pct>=80?'🏆':pct>=50?'🎯':'💪'}</div>
-      <h2 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;margin-bottom:20px">Well done, ${currentPlayer.name}!</h2>
+      <h2 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;margin-bottom:20px">Well done, ${sanitize(currentPlayer.name)}!</h2>
       <span class="result-score">${s}</span>
       <span class="result-label">out of ${total}</span>
       <div class="result-stats">
@@ -1649,8 +2291,15 @@ function finishQuiz(){
       <button class="btn btn-outline" style="margin-top:8px" onclick="navigate('player-dash')">← Back to Dashboard</button>
     </div></div>`;
   const players=getPlayers(),idx=players.findIndex(p=>p.phone===currentPlayer.phone);
-  if(idx>-1){players[idx].score=s;players[idx].quizDone=true;savePlayers(players);currentPlayer=players[idx]}
+  if(idx>-1){
+    players[idx].score=s;
+    players[idx].scoreChecksum = computeScoreChecksum(players[idx].code, s);
+    players[idx].quizDone=true;
+    savePlayers(players);
+    currentPlayer=players[idx];
+  }
   const scores=getScores();scores[currentPlayer.team]=(scores[currentPlayer.team]||0)+s;saveScores(scores);
+  LS.set('answers_' + currentPlayer.code, null); // clear session data
   toast('Score saved: '+s+'/'+total,'success')}
 
 /* ─── ADMIN: PLAYERS TABLE ─── */
@@ -1665,14 +2314,18 @@ function renderPlayersTable(){
     <div class="stat-box"><div class="sv">${players.filter(p=>p.quizDone).length}</div><div class="sl">Completed</div></div>`;
   const tbody=document.querySelector('#playersTable tbody');tbody.innerHTML='';
   filtered.forEach(p=>{tbody.innerHTML+=`<tr>
-    <td>${p.name}</td><td class="mono">${p.phone}</td><td>${p.college}</td><td>${p.team}</td>
-    <td class="mono" style="color:var(--neon)">${p.code}</td>
+    <td>${sanitize(p.name)}</td><td class="mono">${sanitize(p.phone)}</td><td>${sanitize(p.college)}</td><td>${sanitize(p.team)}</td>
+    <td class="mono" style="color:var(--neon)">${sanitize(p.code)}</td>
     <td class="mono">${p.score}</td>
-    <td><button class="btn btn-danger btn-sm" onclick="deletePlayer('${p.phone}')">Delete</button></td></tr>`})}
+    <td><button class="btn btn-danger btn-sm" onclick="deletePlayer('${sanitize(p.phone)}')">Delete</button></td></tr>`})} // FIX: Bug 14 — sanitize all player data
 
 function deletePlayer(phone){if(!confirm('Delete this player?'))return;const players=getPlayers().filter(p=>p.phone!==phone);savePlayers(players);renderPlayersTable();toast('Player deleted','info')}
 
-function exportCSV(){const players=getPlayers();let csv='Name,Phone,College,Team,Code,Score\n';players.forEach(p=>{csv+=`"${p.name}","${p.phone}","${p.college}","${p.team}","${p.code}",${p.score}\n`});
+// FIX: Bug 15 — Export CSV empty check
+function exportCSV(){
+  const players=getPlayers();
+  if(players.length===0){toast('No players to export. Register some players first.','info');return;}
+  let csv='Name,Phone,College,Team,Code,Score\n';players.forEach(p=>{csv+=`"${p.name}","${p.phone}","${p.college}","${p.team}","${p.code}",${p.score}\n`});
   const blob=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='quizmania_players.csv';a.click();toast('CSV exported','success')}
 
 /* ─── ADMIN: ROUNDS ─── */
@@ -1706,21 +2359,21 @@ function renderQuestions(){
   if(!filtered.length){list.innerHTML='<p style="color:var(--text-dim);text-align:center;padding:40px">No questions found.</p>';return}
   filtered.forEach(q=>{
     const dc=q.difficulty==='Easy'?'diff-easy':q.difficulty==='Hard'?'diff-hard':'diff-medium';
-    const imgHtml=q.image?`<img src="${q.image}" class="q-card-img" alt="Visual question" loading="lazy">`:''
+    const imgHtml=q.image?`<img src="${sanitize(q.image)}" class="q-card-img" alt="Visual question" loading="lazy">`:'' // FIX: Bug 14 — sanitize image URL
     list.innerHTML+=`<div class="card q-card">
-      <h4>${q.q}</h4>
+      <h4>${sanitize(q.q)}</h4>
       ${imgHtml}
       <div class="q-meta">
-        <span>📁 ${q.category}</span><span>🎯 ${q.round}</span>
-        <span class="${dc}">⚡ ${q.difficulty}</span>
-        <span style="color:var(--success);border-color:rgba(16,185,129,.2);background:rgba(16,185,129,.06)">✓ ${String.fromCharCode(65+q.answer)}</span>
+        <span>📁 ${sanitize(q.category)}</span><span>🎯 ${sanitize(q.round)}</span>
+        <span class="${dc}">⚡ ${sanitize(q.difficulty)}</span>
+        <span style="color:var(--success);border-color:rgba(16,185,129,.2);background:rgba(16,185,129,.06)">✓ ${String.fromCharCode(65+(q.answer||0))}</span>
         ${q.image?'<span style="color:var(--neon);border-color:rgba(0,245,255,.2);background:rgba(0,245,255,.06)">🖼 Image</span>':''}
       </div>
-      <p style="font-size:.78rem;color:var(--text-dim);margin:6px 0">${q.options.map((o,j)=>`<span style="margin-right:12px">${String.fromCharCode(65+j)}) ${o}</span>`).join('')}</p>
+      <p style="font-size:.78rem;color:var(--text-dim);margin:6px 0">${q.options.map((o,j)=>`<span style="margin-right:12px">${String.fromCharCode(65+j)}) ${sanitize(o)}</span>`).join('')}</p>
       <div style="margin-top:10px;display:flex;gap:6px">
         <button class="btn btn-outline btn-sm" onclick="editQuestion('${q.id}')">Edit</button>
         <button class="btn btn-danger btn-sm" onclick="deleteQuestion('${q.id}')">Delete</button>
-      </div></div>`})}
+      </div></div>`})} // FIX: Bug 14 — sanitize all question data
 
 function showAddQuestionModal(edit=null){
   const q=edit||{q:'',options:['','','',''],answer:0,category:'Science & Tech',round:'Preliminary',difficulty:'Medium',image:''};
@@ -1739,10 +2392,26 @@ function showAddQuestionModal(edit=null){
       <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
     </div>`)}
 
+// FIX: Bugs 9,10 — Question save validation
 function saveQuestion(editId){
   const imgVal=document.getElementById('mqImg')?.value.trim()||'';
-  const qObj={q:document.getElementById('mqQ').value.trim(),options:[0,1,2,3].map(i=>document.getElementById('mqO'+i).value.trim()),answer:parseInt(document.getElementById('mqA').value),category:document.getElementById('mqCat').value,round:document.getElementById('mqRnd').value,difficulty:document.getElementById('mqDiff').value,image:imgVal||undefined};
-  if(!qObj.q||qObj.options.some(o=>!o)){toast('Fill all fields','error');return}
+  const qText=document.getElementById('mqQ').value.trim();
+  const options=[0,1,2,3].map(i=>document.getElementById('mqO'+i).value.trim());
+  const answerIdx=parseInt(document.getElementById('mqA').value);
+
+  // FIX: Bug 9 — Validate question text
+  if(!qText){toast('Question text cannot be blank.','error');return;}
+
+  // FIX: Bug 10 — Validate minimum 2 filled options
+  const filledOptions=options.filter(o=>o!=='');
+  if(filledOptions.length<2){toast('Please add at least 2 answer options.','error');return;}
+
+  // FIX: Bug 9 — Validate correct answer option is filled
+  if(!options[answerIdx]||options[answerIdx].trim()===''){
+    toast('The correct answer option cannot be blank. Please fill it in or select a different correct answer.','error');return;
+  }
+
+  const qObj={q:qText,options:options,answer:answerIdx,category:document.getElementById('mqCat').value,round:document.getElementById('mqRnd').value,difficulty:document.getElementById('mqDiff').value,image:imgVal||undefined};
   const questions=getQuestions();
   if(editId){const idx=questions.findIndex(q=>q.id===editId);if(idx>-1){questions[idx]={...questions[idx],...qObj};saveQuestions(questions);toast('Question updated','success')}}
   else{qObj.id='q'+Date.now();questions.push(qObj);saveQuestions(questions);toast('Question added','success')}
@@ -1766,19 +2435,24 @@ function renderAdminLeaderboard(){
       statusHtml=isQual?`<span style="color:var(--success);font-weight:600;font-size:.8rem;border:1px solid rgba(16,185,129,.3);padding:2px 6px;border-radius:4px;background:rgba(16,185,129,.05)">QUALIFIED</span>`:
         `<span style="color:var(--danger);font-size:.8rem;border:1px solid rgba(244,63,94,.3);padding:2px 6px;border-radius:4px;background:rgba(244,63,94,.05)">ELIMINATED</span>`;
     }
-    tbody.innerHTML+=`<tr><td>${medal}</td><td>${team}</td><td class="mono" style="color:var(--neon)">${score}</td>
+    tbody.innerHTML+=`<tr><td>${medal}</td><td>${sanitize(team)}</td><td class="mono" style="color:var(--neon)">${score}</td>
       <td>${statusHtml}</td>
-      <td><input type="number" value="${score}" style="width:70px;padding:5px 8px;background:rgba(255,255,255,.04);border:1px solid var(--glass-border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:.82rem" onchange="adjustScore('${team}',this.value)"></td></tr>`});
+      <td><input type="number" value="${score}" min="0" style="width:70px;padding:5px 8px;background:rgba(255,255,255,.04);border:1px solid var(--glass-border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:.82rem" onchange="adjustScore('${sanitize(team).replace(/'/g,"\\\'")}',this.value)"></td></tr>`}); // FIX: Bug 14 — sanitize team, Bug 12 — min="0"
   const chart=document.getElementById('barChart');const top5=sorted.slice(0,5);const max=Math.max(...top5.map(t=>t[1]),1);chart.innerHTML='';
   const colors=['var(--neon)','var(--neon2)','var(--success)','var(--gold)','var(--danger)'];
   top5.forEach(([team,score],i)=>{chart.innerHTML+=`<div class="bar-col">
     <div class="bar-val">${score}</div>
     <div class="bar" style="height:${(score/max)*160}px;background:${colors[i%5]}"></div>
-    <div class="bar-label">${team}</div></div>`})}
+    <div class="bar-label">${sanitize(team)}</div></div>`})} // FIX: Bug 14 — sanitize team in chart
 
+// FIX: Bug 11 — Advance Teams precondition checks
 function showAdvanceModal(){
+  const scores=getScores();
+  const sorted=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+  if(sorted.length===0){toast('No teams to advance. Register players and run a round first.','error');return;}
   const rounds=['Preliminary','Visual','Buzzer','Finale'];
   const ar=getActiveRound();
+  if(!ar){toast('No active round. Please activate a round in the Rounds tab before advancing teams.','error');return;}
   let nextRound=rounds[1];
   if(ar){const idx=rounds.indexOf(ar);if(idx>=0&&idx<3)nextRound=rounds[idx+1]}
   showModal(`<h3 style="font-family:var(--font-head);font-size:1.5rem;letter-spacing:2px;margin-bottom:12px;color:var(--neon)">⚡ ADVANCE TEAMS</h3>
@@ -1811,10 +2485,16 @@ function advanceTeams(){
   toast(`Advanced ${advancingTeams.length} teams to ${round}! (Cutoff: ${cutoffScore} pts)`,`success`);
 }
 
-function adjustScore(team,val){const scores=getScores();scores[team]=parseInt(val)||0;saveScores(scores);toast('Score updated for '+team,'success');renderAdminLeaderboard()}
+// FIX: Bug 12 — Score adjustment clamped to minimum 0
+function adjustScore(team,val){
+  const newScore=Math.max(0,parseInt(val)||0);
+  if((parseInt(val)||0)<0){toast('Score cannot go below 0.','error');}
+  const scores=getScores();scores[team]=newScore;saveScores(scores);toast('Score updated for '+sanitize(team),'success');renderAdminLeaderboard();
+}
 
 /* ─── ADMIN: SETTINGS ─── */
-function confirmAction(msg,fn){showModal(`<h3 style="font-family:var(--font-head);font-size:1.5rem;letter-spacing:2px;margin-bottom:12px;color:var(--warning)">⚠ CONFIRM</h3><p style="margin-bottom:24px;color:var(--text-mid);font-size:.9rem">${msg}</p><div style="display:flex;gap:8px"><button class="btn btn-danger" onclick="closeModal();(${fn.toString()})()">Yes, Proceed</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>`)}
+// FIX: Bug 3 — Danger zone uses confirmation modal with DELETE input
+function confirmAction(msg,fn){showDangerConfirmModal(msg,fn);}
 function resetScores(){const scores=getScores();Object.keys(scores).forEach(k=>scores[k]=0);saveScores(scores);const players=getPlayers();players.forEach(p=>{p.score=0;p.quizDone=false});savePlayers(players);toast('All scores reset','success');renderAdminLeaderboard()}
 function clearAllData(){savePlayers([]);saveScores({});setActiveRound('');saveRounds({Preliminary:'inactive',Visual:'inactive',Buzzer:'inactive',Finale:'inactive'});toast('All data cleared','success');renderPlayersTable();renderAdminLeaderboard()}
 
@@ -1874,7 +2554,7 @@ function buzzerRevealQuestion(){
       `<div class="buzzer-opt" id="bopt${i}"><span class="b-letter">${String.fromCharCode(65+i)}</span>${o}</div>`).join('')}</div>
     <p style="color:var(--neon);font-family:var(--font-head);font-size:1.4rem;letter-spacing:3px;margin:12px 0">WAITING FOR BUZZ...</p>
     <div class="buzzer-teams" id="buzzerTeams">${buzzerState.teams.map(t=>
-      `<button class="buzzer-team-btn" onclick="teamBuzzed('${t.replace(/'/g,"\\'")}')">${t}</button>`).join('')}</div>
+      `<button class="buzzer-team-btn" onclick="teamBuzzed('${sanitize(t).replace(/'/g,"\\\'")}')">${sanitize(t)}</button>`).join('')}</div>
     <div class="buzzer-controls" style="margin-top:10px">
       <button class="btn btn-outline btn-sm" onclick="buzzerShowAnswer()">👁 Show Answer</button>
       <button class="btn btn-outline btn-sm" onclick="buzzerSkipQuestion()">⏭ Skip</button>
@@ -1888,7 +2568,7 @@ function teamBuzzed(team){
   const q=buzzerState.questions[buzzerState.current];
   const main=document.getElementById('buzzerMain');
   const verdictArea=document.createElement('div');verdictArea.className='buzzer-verdict';verdictArea.id='buzzerVerdict';
-  verdictArea.innerHTML=`<span style="font-family:var(--font-head);font-size:1.4rem;letter-spacing:2px;color:var(--neon);margin-right:12px">🔔 ${team}</span>
+  verdictArea.innerHTML=`<span style="font-family:var(--font-head);font-size:1.4rem;letter-spacing:2px;color:var(--neon);margin-right:12px">🔔 ${sanitize(team)}</span>
     <button class="btn btn-success btn-sm" onclick="buzzerMark(true)" style="padding:8px 20px">✓ Correct (+1)</button>
     <button class="btn btn-danger btn-sm" onclick="buzzerMark(false)" style="padding:8px 20px">✗ Wrong (-1)</button>`;
   const old=document.getElementById('buzzerVerdict');if(old)old.remove();
@@ -1936,7 +2616,7 @@ function buzzerFinish(){
     <div style="display:flex;gap:20px;flex-wrap:wrap;justify-content:center">${top3.map(([team,score],i)=>
       `<div class="card" style="padding:24px 32px;text-align:center;min-width:160px;${i===0?'border-color:var(--gold);box-shadow:0 0 30px rgba(251,191,36,.2)':''}">
         <div style="font-size:2.5rem;margin-bottom:8px">${medals[i]||''}</div>
-        <div style="font-family:var(--font-head);font-size:1.3rem;letter-spacing:1px">${team}</div>
+        <div style="font-family:var(--font-head);font-size:1.3rem;letter-spacing:1px">${sanitize(team)}</div>
         <div style="font-family:var(--font-mono);font-size:1.8rem;color:var(--neon);margin-top:6px">${score}</div>
       </div>`).join('')}</div>
     <button class="btn btn-outline" style="margin-top:30px" onclick="closeBuzzerMode()">← Back to Dashboard</button>`;
@@ -1948,7 +2628,7 @@ function updateBuzzerScoreboard(){
   sb.innerHTML=sorted.map(([team,score],i)=>{
     const hl=buzzerState?.buzzedTeam===team?'highlight':'';
     const medal=i===0?'🥇 ':i===1?'🥈 ':i===2?'🥉 ':'';
-    return`<div class="buzzer-sb-row ${hl}"><span>${medal}${team}</span><span class="buzzer-sb-score">${score}</span></div>`}).join('')}
+    return`<div class="buzzer-sb-row ${hl}"><span>${medal}${sanitize(team)}</span><span class="buzzer-sb-score">${score}</span></div>`}).join('')} // FIX: Bug 14 — sanitize team names in buzzer scoreboard
 
 /* ═══════════════════════════════════════════
    ─── FINALE ROUND: WAGER & CONQUER ───
@@ -1973,8 +2653,8 @@ function launchFinaleMode(){
     <p style="color:var(--text-dim);margin-bottom:24px">Choose the top teams that will compete in the Grand Finale</p>
     <div class="finale-teams-row" id="finaleTeamSelect">${top.map(([team,score])=>
       `<label class="finale-team-card" style="cursor:pointer" onclick="this.classList.toggle('active-turn')">
-        <input type="checkbox" value="${team}" style="display:none" checked>
-        <div class="finale-team-name">${team}</div>
+        <input type="checkbox" value="${sanitize(team)}" style="display:none" checked>
+        <div class="finale-team-name">${sanitize(team)}</div>
         <div class="finale-team-score">${score}</div>
       </label>`).join('')}</div>
     <button class="btn btn-neon" style="margin-top:20px;padding:14px 40px;font-size:1.1rem" onclick="startFinale()">⚡ START THE FINALE</button>`;
@@ -2010,9 +2690,9 @@ function finaleTeamCards(showWager=false,showVerdict=false){
       const icon=verdict?'✓':'✗';
       verdictHtml=`<div style="margin-top:8px;font-size:1.2rem;color:${color};font-weight:700">${icon}</div>`}
     return`<div class="finale-team-card">
-      <div class="finale-team-name">${t}</div>
+      <div class="finale-team-name">${sanitize(t)}</div>
       <div class="finale-team-score">${score}</div>
-      ${wagerHtml}${verdictHtml}</div>`}).join('')}
+      ${wagerHtml}${verdictHtml}</div>`}).join('')} // FIX: Bug 14 — sanitize finale teams
 
 function finaleShowCategory(){
   if(!finaleState)return;
@@ -2056,7 +2736,7 @@ function renderWagerForTeam(){
     {label:'💀 All-In (100%)',pct:1}
   ];
   body.innerHTML=`<div class="finale-multiplier ${mClass}">${mult}× MULTIPLIER</div>
-    <h3 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:3px;margin:16px 0;color:var(--neon)">${team}'s WAGER</h3>
+    <h3 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:3px;margin:16px 0;color:var(--neon)">${sanitize(team)}'s WAGER</h3>
     <p style="color:var(--text-dim);margin-bottom:6px">Current Score: <strong style="color:var(--neon);font-family:var(--font-mono)">${score}</strong></p>
     <p style="color:var(--text-dim);font-size:.82rem;margin-bottom:20px">Team ${ti+1} of ${finaleState.teams.length}</p>
     <div class="finale-wager-btns">${wagerAmounts.map(w=>{
@@ -2096,7 +2776,7 @@ function finaleShowQuestion(){
       const score=finaleState.teamScores[t];
       const wager=finaleState.wagers[t]||0;
       return`<div class="finale-team-card" id="fteam-${t.replace(/\s/g,'_')}">
-        <div class="finale-team-name">${t}</div>
+        <div class="finale-team-name">${sanitize(t)}</div>
         <div class="finale-team-score">${score}</div>
         <div class="finale-team-wager">Wagered: ${wager} pts</div>
         <div style="margin-top:10px;display:flex;gap:6px;justify-content:center">
@@ -2145,7 +2825,7 @@ function finaleProcessResults(){
       const color=correct?'var(--success)':'var(--danger)';
       const sign=correct?'+':'';
       return`<div class="finale-team-card" style="border-color:${color}">
-        <div class="finale-team-name">${t}</div>
+        <div class="finale-team-name">${sanitize(t)}</div>
         <div class="finale-team-score">${finaleState.teamScores[t]}</div>
         <div style="font-family:var(--font-mono);font-size:1.2rem;color:${color};margin-top:6px">${sign}${delta} pts</div>
         <div style="font-size:.75rem;color:var(--text-dim);margin-top:4px">Wagered ${wager} × ${mult}</div>
@@ -2168,12 +2848,12 @@ function finaleShowWinner(){
   sfxCorrect();setTimeout(sfxCorrect,300);setTimeout(sfxCorrect,600);
   body.innerHTML=`<div class="finale-winner-trophy">🏆</div>
     <p style="font-family:var(--font-head);font-size:1.2rem;letter-spacing:4px;color:var(--text-dim);margin-bottom:8px">THE WINNER OF QUIZ MANIA</p>
-    <div class="finale-winner-name">${winner[0]}</div>
+    <div class="finale-winner-name">${sanitize(winner[0])}</div>
     <div style="font-family:var(--font-mono);font-size:2.5rem;color:var(--neon);margin:12px 0">${winner[1]} POINTS</div>
     <div class="finale-teams-row" style="margin-top:30px">${sorted.map(([team,score],i)=>
       `<div class="finale-team-card" style="${i===0?'border-color:var(--gold);box-shadow:0 0 30px rgba(251,191,36,.3)':''}">
         <div style="font-size:2rem;margin-bottom:6px">${medals[i]||'🎖'}</div>
-        <div class="finale-team-name">${team}</div>
+        <div class="finale-team-name">${sanitize(team)}</div>
         <div class="finale-team-score">${score}</div>
       </div>`).join('')}</div>
     <button class="btn btn-outline" style="margin-top:30px" onclick="closeFinaleMode()">← Back to Dashboard</button>`;
@@ -2182,16 +2862,41 @@ function finaleShowWinner(){
 /* ─── INIT ─── */
 initQuestions();
 
-// Restore session on page load
+// FIX: Bug 2 — Restore session on page load (admin requires sessionStorage token)
 (function restoreSession(){
   const session=LS.get('quizmania_session');
   if(!session)return;
-  if(session.type==='admin'){isAdmin=true;document.getElementById('navUser').textContent='🛡 Quizmaster';navigate('admin-dash')}
+  if(session.type==='admin'){
+    // FIX: Bug 2 — Only restore admin if sessionStorage token exists
+    if(isAdminAuthenticated()){
+      isAdmin=true;document.getElementById('navUser').textContent='🛡 Quizmaster';navigate('admin-dash');
+    } else {
+      LS.set('quizmania_session',null); // token expired or tab reopened
+    }
+  }
   else if(session.type==='player'){
     const player=getPlayers().find(p=>p.code===session.code);
     if(player){currentPlayer=player;document.getElementById('navUser').textContent=player.name;navigate('player-dash')}
     else{LS.set('quizmania_session',null)}
   }
+})();
+
+// FIX: Bug 16 — Mobile hamburger auto-close on nav link click
+(function setupMobileNavClose(){
+  const sidebar=document.getElementById('adminSidebar');
+  if(sidebar){
+    sidebar.querySelectorAll('a').forEach(link=>{
+      link.addEventListener('click',()=>{sidebar.classList.remove('open');});
+    });
+  }
+  // Close sidebar when clicking outside
+  document.addEventListener('click',(e)=>{
+    if(!sidebar)return;
+    const hamburger=document.getElementById('hamburgerBtn');
+    if(sidebar.classList.contains('open')&&!sidebar.contains(e.target)&&hamburger&&!hamburger.contains(e.target)){
+      sidebar.classList.remove('open');
+    }
+  });
 })();
 </script>
 </body>
