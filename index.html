@@ -1830,6 +1830,117 @@
       }
     }
 
+
+    /* ─── PLAYER BUZZER BUTTON ─── */
+    .player-buzzer-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px 20px;
+    }
+    .player-buzzer-btn {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      border: 4px solid var(--neon);
+      background: radial-gradient(circle at 40% 35%, rgba(0,245,255,.25), rgba(0,245,255,.05));
+      color: var(--neon);
+      font-family: var(--font-head);
+      font-size: 1.6rem;
+      letter-spacing: 3px;
+      cursor: pointer;
+      transition: all .2s;
+      box-shadow: 0 0 40px rgba(0,245,255,.2), inset 0 0 40px rgba(0,245,255,.05);
+      animation: buzzerPulse 1.5s ease-in-out infinite;
+      position: relative;
+    }
+    .player-buzzer-btn:hover {
+      transform: scale(1.08);
+      box-shadow: 0 0 60px rgba(0,245,255,.4), inset 0 0 60px rgba(0,245,255,.1);
+    }
+    .player-buzzer-btn:active {
+      transform: scale(0.95);
+    }
+    .player-buzzer-btn:disabled {
+      animation: none;
+      opacity: 0.4;
+      cursor: not-allowed;
+      border-color: var(--success);
+      color: var(--success);
+      box-shadow: 0 0 20px rgba(16,185,129,.2);
+    }
+    @keyframes buzzerPulse {
+      0%, 100% { box-shadow: 0 0 30px rgba(0,245,255,.2), inset 0 0 30px rgba(0,245,255,.05); transform: scale(1); }
+      50% { box-shadow: 0 0 60px rgba(0,245,255,.5), inset 0 0 50px rgba(0,245,255,.15); transform: scale(1.06); }
+    }
+
+    /* ─── ADMIN BUZZ FEED ─── */
+    .buzz-feed {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 16px 0;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .buzz-entry {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 18px;
+      border-radius: 10px;
+      border: 1px solid var(--glass-border);
+      background: rgba(255,255,255,.03);
+      animation: buzzSlideIn .4s ease-out;
+      transition: all .3s;
+    }
+    .buzz-entry.buzz-1st {
+      border-color: var(--neon);
+      background: rgba(0,245,255,.08);
+      box-shadow: 0 0 20px rgba(0,245,255,.15);
+    }
+    .buzz-entry.buzz-2nd {
+      border-color: var(--neon2);
+      background: rgba(139,92,246,.06);
+    }
+    .buzz-entry.buzz-3rd {
+      border-color: var(--gold);
+      background: rgba(251,191,36,.05);
+    }
+    .buzz-rank {
+      font-size: 1.5rem;
+      min-width: 36px;
+      text-align: center;
+    }
+    .buzz-team-name {
+      font-family: var(--font-head);
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+      flex: 1;
+    }
+    .buzz-time {
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      color: var(--text-dim);
+    }
+    @keyframes buzzSlideIn {
+      from { opacity: 0; transform: translateX(-30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .buzz-waiting-text {
+      font-family: var(--font-head);
+      font-size: 1.4rem;
+      letter-spacing: 3px;
+      color: var(--neon);
+      margin: 12px 0;
+      animation: buzzWaitPulse 1.2s ease-in-out infinite;
+    }
+    @keyframes buzzWaitPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .4; }
+    }
+
     /* ─── FINALE MODE ─── */
     .finale-overlay {
       display: none;
@@ -2975,7 +3086,8 @@
           'quizmania_scores': {},
           'quizmania_rounds': { Preliminary: 'inactive', Visual: 'inactive', Buzzer: 'inactive', Finale: 'inactive' },
           'quizmania_active_round': '',
-          'quizmania_qualifications': {}
+          'quizmania_qualifications': {},
+          'quizmania_buzzer': { questionNum: 0, buzzes: [], acceptingBuzzes: false }
         };
         Object.keys(defaultVals).forEach(k => {
           db.ref(k).on('value', snap => {
@@ -3001,10 +3113,21 @@
     function setActiveRound(r) { Sync.set('quizmania_active_round', r) }
     function getQualifications() { return Sync.get('quizmania_qualifications', {}) }
     function saveQualifications(q) { Sync.set('quizmania_qualifications', q) }
+    function getBuzzerState() { return Sync.get('quizmania_buzzer', { questionNum: 0, buzzes: [], acceptingBuzzes: false }) }
+    function saveBuzzerState(b) { Sync.set('quizmania_buzzer', b) }
 
     let currentPlayer = null, isAdmin = false, quizState = null;
 
     window.onSyncUpdate = (k) => {
+      if (k === 'quizmania_buzzer') {
+        // Real-time buzzer sync
+        if (isAdmin && document.getElementById('buzzerOverlay')?.classList.contains('active')) {
+          updateBuzzerBuzzFeed();
+        }
+        if (!isAdmin && currentPlayer) {
+          updatePlayerBuzzerUI();
+        }
+      }
       if (k === 'quizmania_active_round' || k === 'quizmania_rounds' || k === 'quizmania_players' || k === 'quizmania_qualifications') {
         if (isAdmin) {
           const adminEl = document.getElementById('page-admin-dash'); // FIX: correct element ID
@@ -4126,6 +4249,24 @@
       <p style="color:var(--text-dim);font-size:.8rem;margin-top:8px">Watch the live leaderboards below.</p></div>`;
         qa.style.display = 'none'
       }
+      else if (ar === 'Buzzer') {
+        // FIX: Interactive buzzer — show buzzer button on player's phone
+        const bs = getBuzzerState();
+        const alreadyBuzzed = bs.buzzes && bs.buzzes.some(b => b.team === currentPlayer.team);
+        dc.innerHTML = `<div class="card card-glow player-buzzer-wrap">
+      <div style="font-size:2.5rem;margin-bottom:8px">🔔</div>
+      <h3 style="font-family:var(--font-head);font-size:1.8rem;letter-spacing:2px;color:var(--neon);margin-bottom:8px">BUZZER ROUND</h3>
+      <p style="color:var(--text-dim);margin-bottom:24px;font-size:.88rem">Listen to the question, then hit the buzzer!</p>
+      <button id="playerBuzzerBtn" class="player-buzzer-btn" onclick="playerBuzz()" ${alreadyBuzzed ? 'disabled' : ''}>🔔<br>BUZZ!</button>
+      <div id="buzzFeedback" style="margin-top:16px;font-size:.9rem;min-height:24px">${alreadyBuzzed ? '<span style="color:var(--success)">✓ BUZZED! Waiting for quizmaster...</span>' : (bs.acceptingBuzzes ? '<span style="color:var(--neon)">⚡ BUZZER IS LIVE — TAP NOW!</span>' : '<span style="color:var(--text-dim)">Waiting for quizmaster to reveal the question...</span>')}</div>
+    </div>`;
+        qa.style.display = 'none';
+        // Poll for round change
+        if (playerDashPollInterval) { clearInterval(playerDashPollInterval); playerDashPollInterval = null; }
+        playerDashPollInterval = setInterval(() => {
+          if (getActiveRound() !== 'Buzzer') { clearInterval(playerDashPollInterval); playerDashPollInterval = null; loadPlayerDash(); }
+        }, 5000);
+      }
       else if (ar && !isDone) {
         dc.innerHTML = `<div class="card card-glow" style="text-align:center;padding:36px 24px">
       <div style="font-size:2.5rem;margin-bottom:12px">🎯</div>
@@ -4649,6 +4790,41 @@
     function sfxWrong() { playTone(200, .3, 'sawtooth', .2); setTimeout(() => playTone(150, .3, 'sawtooth', .15), 150) }
     function sfxReveal() { playTone(440, .08, 'sine', .2); setTimeout(() => playTone(660, .15, 'sine', .25), 80) }
 
+    /* ─── PLAYER BUZZER FUNCTIONS ─── */
+    function playerBuzz() {
+      if (!currentPlayer) return;
+      const bs = getBuzzerState();
+      if (!bs.acceptingBuzzes) { toast('Buzzer not active yet! Wait for the question.', 'error'); return; }
+      if (bs.buzzes && bs.buzzes.some(b => b.team === currentPlayer.team)) { toast('Already buzzed!', 'info'); return; }
+      const buzzes = bs.buzzes || [];
+      buzzes.push({ team: currentPlayer.team, name: currentPlayer.name, time: Date.now() });
+      bs.buzzes = buzzes;
+      saveBuzzerState(bs);
+      sfxBuzz();
+      const btn = document.getElementById('playerBuzzerBtn');
+      if (btn) { btn.disabled = true; }
+      const fb = document.getElementById('buzzFeedback');
+      if (fb) fb.innerHTML = '<span style="color:var(--success)">✓ BUZZED! Waiting for quizmaster...</span>';
+    }
+
+    function updatePlayerBuzzerUI() {
+      const bs = getBuzzerState();
+      const btn = document.getElementById('playerBuzzerBtn');
+      const fb = document.getElementById('buzzFeedback');
+      if (!btn || !fb || !currentPlayer) return;
+      const alreadyBuzzed = bs.buzzes && bs.buzzes.some(b => b.team === currentPlayer.team);
+      if (alreadyBuzzed) {
+        btn.disabled = true;
+        fb.innerHTML = '<span style="color:var(--success)">✓ BUZZED! Waiting for quizmaster...</span>';
+      } else if (bs.acceptingBuzzes) {
+        btn.disabled = false;
+        fb.innerHTML = '<span style="color:var(--neon)">⚡ BUZZER IS LIVE — TAP NOW!</span>';
+      } else {
+        btn.disabled = true;
+        fb.innerHTML = '<span style="color:var(--text-dim)">Waiting for quizmaster to reveal the question...</span>';
+      }
+    }
+
     /* ─── BUZZER ROUND ─── */
     let buzzerState = null;
 
@@ -4746,7 +4922,10 @@
 
     function buzzerShowAnswer() {
       const q = buzzerState.questions[buzzerState.current];
-      document.getElementById('bopt' + q.answer).classList.add('b-correct'); buzzerState.answered = true;
+      // FIX: resolve correct answer via answerHash
+      const correctShowIdx = q.options.findIndex(opt => hashOption(opt) === q.answerHash);
+      if (correctShowIdx >= 0) document.getElementById('bopt' + correctShowIdx).classList.add('b-correct');
+      buzzerState.answered = true;
       sfxCorrect()
     }
 
