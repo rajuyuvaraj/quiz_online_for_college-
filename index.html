@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Quiz Mania — INNOVEX 2.0</title>
+<title>Brainy Bytes — INNOVEX 2.0</title>
 <meta name="description" content="Quiz Mania - Technical Quiz Event by Dept of Computer Science, Bengaluru City University. INNOVEX 2.0 — 2026">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -390,7 +390,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 <canvas id="bg"></canvas>
 
 <nav class="navbar">
-  <span class="nav-logo" onclick="navigate('landing')">⚡ QUIZ MANIA</span>
+  <span class="nav-logo" onclick="navigate('landing')">⚡ BRAINY BYTES</span>
   <div class="nav-right">
     <span class="nav-user" id="navUser"></span>
     <button class="hamburger" id="hamburgerBtn" onclick="toggleSidebar()" style="display:none">☰</button>
@@ -409,7 +409,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <h1>QUIZ MANIA</h1>
       <div class="hero-sub">TECHNICAL QUIZ</div>
       <p class="hero-detail">Dept. of Computer Science &nbsp;·&nbsp; Bengaluru City University</p>
-      <p class="hero-detail" style="margin-top:4px">April 17–18, 2026</p>
+      <p class="hero-detail" style="margin-top:4px">May 4–5, 2026</p>
       <div class="hero-divider"></div>
       <div class="countdown" id="countdown"></div>
       <div class="cta-buttons">
@@ -443,7 +443,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div class="card step-card"><span class="step-num">04</span><h4>Win</h4><p>Top teams advance to the Finale for ultimate glory 🏆</p></div>
     </div>
 
-    <footer>⚡ QUIZ MANIA — INNOVEX 2.0 © 2026 &nbsp;·&nbsp; Bengaluru City University &nbsp;·&nbsp; Dept. of Computer Science</footer>
+    <footer>⚡ BRAINY BYTES — INNOVEX 2.0 © 2026 &nbsp;·&nbsp; Bengaluru City University &nbsp;·&nbsp; Dept. of Computer Science &nbsp;·&nbsp; Made by raju_yuvraj</footer>
   </div>
 </div>
 
@@ -630,9 +630,9 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <div class="card" style="margin-bottom:16px">
           <h3 style="font-family:var(--font-head);font-size:1.2rem;letter-spacing:1px;margin-bottom:14px;color:var(--text-dim)">EVENT INFO</h3>
           <div style="display:grid;gap:8px;font-size:.85rem;color:var(--text-mid);line-height:2">
-            <span><span style="color:var(--text-dim);font-size:.7rem;text-transform:uppercase;letter-spacing:1px">Event</span><br>Quiz Mania — Technical Quiz</span>
+            <span><span style="color:var(--text-dim);font-size:.7rem;text-transform:uppercase;letter-spacing:1px">Event</span><br>Brainy Bytes — Technical Quiz</span>
             <span><span style="color:var(--text-dim);font-size:.7rem;text-transform:uppercase;letter-spacing:1px">Part of</span><br>INNOVEX 2.0 — 2026</span>
-            <span><span style="color:var(--text-dim);font-size:.7rem;text-transform:uppercase;letter-spacing:1px">Date</span><br>April 17–18, 2026</span>
+            <span><span style="color:var(--text-dim);font-size:.7rem;text-transform:uppercase;letter-spacing:1px">Date</span><br>May 4–5, 2026</span>
             <span><span style="color:var(--text-dim);font-size:.7rem;text-transform:uppercase;letter-spacing:1px">Hosted by</span><br>Dept. of Computer Science, Bengaluru City University</span>
           </div>
           <h3 style="font-family:var(--font-head);font-size:1.2rem;letter-spacing:1px;margin-bottom:14px;color:var(--text-dim);margin-top:20px">GAMEPLAY SETTINGS</h3>
@@ -690,7 +690,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
   </div>
 </div>
 
-<footer style="position:relative;z-index:1;text-align:center;padding:30px 16px;border-top:1px solid var(--glass-border);color:var(--text-dim);font-size:.75rem;margin-top:60px;letter-spacing:.5px">⚡ QUIZ MANIA — INNOVEX 2.0 © 2026 &nbsp;·&nbsp; Bengaluru City University &nbsp;·&nbsp; Dept. of Computer Science</footer>
+<footer style="position:relative;z-index:1;text-align:center;padding:30px 16px;border-top:1px solid var(--glass-border);color:var(--text-dim);font-size:.75rem;margin-top:60px;letter-spacing:.5px">⚡ BRAINY BYTES — INNOVEX 2.0 © 2026 &nbsp;·&nbsp; Bengaluru City University &nbsp;·&nbsp; Dept. of Computer Science &nbsp;·&nbsp; Made by raju_yuvraj</footer>
 
 <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -983,7 +983,7 @@ Sync.init();
 
 /* ─── COUNTDOWN ─── */
 function updateCountdown(){
-  const target=new Date('2026-04-17T09:00:00+05:30').getTime(),now=Date.now(),d=target-now;
+  const target=new Date('2026-05-04T09:00:00+05:30').getTime(),now=Date.now(),d=target-now;
   if(d<=0){document.getElementById('countdown').innerHTML='<p style="color:var(--neon);font-size:1.1rem;font-weight:600;font-family:var(--font-head);letter-spacing:3px">🎉 EVENT HAS STARTED!</p>';return}
   const days=Math.floor(d/864e5),hrs=Math.floor(d%864e5/36e5),mins=Math.floor(d%36e5/6e4),secs=Math.floor(d%6e4/1e3);
   document.getElementById('countdown').innerHTML=
@@ -1191,7 +1191,7 @@ function finalizeRegistration(name,phone,college,team){
 }
 
 function shareWhatsApp() {
-  const msg = encodeURIComponent(`Your Quiz Mania access code: ${window._lastGeneratedCode}\nKeep this safe — you need it to login!`);
+  const msg = encodeURIComponent(`Your Brainy Bytes access code: ${window._lastGeneratedCode}\nKeep this safe — you need it to login!`);
   window.open(`https://wa.me/?text=${msg}`, '_blank');
 }
 
@@ -2909,7 +2909,7 @@ function finaleShowWinner(){
   for(let i=0;i<5;i++)setTimeout(()=>confetti(),i*500);
   sfxCorrect();setTimeout(sfxCorrect,300);setTimeout(sfxCorrect,600);
   body.innerHTML=`<div class="finale-winner-trophy">🏆</div>
-    <p style="font-family:var(--font-head);font-size:1.2rem;letter-spacing:4px;color:var(--text-dim);margin-bottom:8px">THE WINNER OF QUIZ MANIA</p>
+    <p style="font-family:var(--font-head);font-size:1.2rem;letter-spacing:4px;color:var(--text-dim);margin-bottom:8px">THE WINNER OF BRAINY BYTES</p>
     <div class="finale-winner-name">${sanitize(winner[0])}</div>
     <div style="font-family:var(--font-mono);font-size:2.5rem;color:var(--neon);margin:12px 0">${winner[1]} POINTS</div>
     <div class="finale-teams-row" style="margin-top:30px">${sorted.map(([team,score],i)=>
