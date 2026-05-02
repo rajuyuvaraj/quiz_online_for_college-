@@ -4821,16 +4821,19 @@
     }
 
     /* ─── BUZZER ROUND ─── */
+    let buzzerState = null;
+
     function teamBuzzedManually(team) {
       if (!buzzerState || buzzerState.answered) return;
       sfxBuzz();
       buzzerState.buzzedTeam = team;
-      const main = document.getElementById('buzzerVerdictArea');
-      main.innerHTML = \`<div class="buzzer-verdict" style="margin:0">
-        <span style="font-family:var(--font-head);font-size:1.4rem;letter-spacing:2px;color:var(--neon);margin-right:12px">🔔 \${sanitize(team)}</span>
-        <button class="btn btn-success btn-sm" onclick="buzzerMark(true)" style="padding:8px 20px">✓ Correct (+1)</button>
-        <button class="btn btn-danger btn-sm" onclick="buzzerMark(false)" style="padding:8px 20px">✗ Wrong (-1)</button>
-      </div>\`;
+      const area = document.getElementById('buzzerVerdictArea');
+      if (!area) return;
+      area.innerHTML = '<div class="buzzer-verdict" style="margin:0">' +
+        '<span style="font-family:var(--font-head);font-size:1.4rem;letter-spacing:2px;color:var(--neon);margin-right:12px">🔔 ' + sanitize(team) + '</span>' +
+        '<button class="btn btn-success btn-sm" onclick="buzzerMark(true)" style="padding:8px 20px">✓ Correct (+1)</button>' +
+        '<button class="btn btn-danger btn-sm" onclick="buzzerMark(false)" style="padding:8px 20px">✗ Wrong (-1)</button>' +
+      '</div>';
     }
 
     function buzzerBothWrong() {
@@ -4842,10 +4845,8 @@
       saveScores(scores);
       sfxWrong();
       toast('Both teams penalized -1 point!', 'error');
-      buzzerShowAnswer(); // Auto show answer and end question
+      buzzerShowAnswer(); // Reveal correct answer and end
     }
-
-    let buzzerState = null;
 
     function launchBuzzerMode() {
       const questions = getQuestions().filter(q => q.round === 'Buzzer');
@@ -4854,83 +4855,104 @@
       const quals = getQualifications();
       const teams = quals['Buzzer'] ? quals['Buzzer'] : [...new Set(getPlayers().map(p => p.team))];
       if (teams.length < 2) { toast('Need at least 2 qualified teams', 'error'); return }
+      
       buzzerState = { questions: allQ.sort(() => Math.random() - .5), current: 0, teams, buzzedTeam: null, phase: 'waiting', answered: false };
       document.getElementById('buzzerOverlay').classList.add('active');
       updateBuzzerScoreboard();
       showBuzzerWaiting();
-      toast('Buzzer Mode launched!', 'success')
+      toast('Buzzer Mode launched!', 'success');
     }
 
     function closeBuzzerMode() {
       document.getElementById('buzzerOverlay').classList.remove('active');
-      buzzerState = null; renderAdminLeaderboard()
+      buzzerState = null; 
+      renderAdminLeaderboard();
     }
 
     function showBuzzerWaiting() {
-          const main = document.getElementById('buzzerMain');
-    main.innerHTML = `<div class="buzzer-q-num">Question ${buzzerState.current + 1}</div>
-    <div class="buzzer-question">${q.image ? \`<img src="\${q.image}" style="max-width:100%;border-radius:12px;margin-bottom:15px">\` : ''} ${sanitize(q.q)}</div>
-    <div class="buzzer-options">${q.options.map((o, i) => \`<div class="buzzer-opt" id="bopt\${i}"><span class="b-letter">\${String.fromCharCode(65 + i)}</span>\${o}</div>\`).join('')}</div>
-    
-    <p style="color:var(--neon);font-family:var(--font-head);font-size:1.4rem;letter-spacing:3px;margin:12px 0">AWARD POINTS MANUALLY</p>
-    <div class="buzzer-teams" id="buzzerTeams">${buzzerState.teams.map(t =>
-          \`<button class="buzzer-team-btn" onclick="teamBuzzedManually('\\\${sanitize(t).replace(/'/g, "\\\\\\\\'")}')">\\\${sanitize(t)}</button>\`).join('')}</div>
-    
-    <div id="buzzerVerdictArea" style="margin: 15px 0; min-height: 50px;"></div>
-
-    <div class="buzzer-controls" style="margin-top:10px">
-      <button class="btn btn-outline btn-sm" onclick="buzzerShowAnswer()">👁 Show Answer</button>
-      <button class="btn btn-outline btn-sm" onclick="buzzerSkipQuestion()">⏭ Skip</button>
-      <button class="btn btn-danger btn-sm" onclick="buzzerBothWrong()" style="padding: 5px 15px;">❌ Both Wrong (-1)</button>
-    </div>`;
-      main.classList.add('buzzer-flash'); setTimeout(() => main.classList.remove('buzzer-flash'), 400)
+      const main = document.getElementById('buzzerMain');
+      main.innerHTML = '<div class="buzzer-waiting">' +
+        '<div class="buzzer-q-num">Next: Question ' + (buzzerState.current + 1) + '</div>' +
+        '<div style="font-size:4rem;margin:20px 0">🤔</div>' +
+        '<h2 style="font-family:var(--font-head);font-size:2.5rem;letter-spacing:4px">GET READY...</h2>' +
+        '<p style="color:var(--text-dim);margin-bottom:30px">Points: Correct +1 | Wrong -1</p>' +
+        '<button class="btn btn-neon btn-lg" onclick="buzzerRevealQuestion()">REVEAL QUESTION</button>' +
+      '</div>';
+      main.classList.add('buzzer-flash'); 
+      setTimeout(() => main.classList.remove('buzzer-flash'), 400);
+      updateBuzzerScoreboard();
     }
 
-    function teamBuzzed(team) {
-      if (!buzzerState || buzzerState.answered) return;
-      sfxBuzz(); buzzerState.buzzedTeam = team; buzzerState.phase = 'buzzed';
-      document.querySelectorAll('.buzzer-team-btn').forEach(b => { b.classList.remove('buzzed'); if (b.textContent === team) b.classList.add('buzzed') });
+    function buzzerRevealQuestion() {
       const q = buzzerState.questions[buzzerState.current];
       const main = document.getElementById('buzzerMain');
-      const verdictArea = document.createElement('div'); verdictArea.className = 'buzzer-verdict'; verdictArea.id = 'buzzerVerdict';
-      verdictArea.innerHTML = `<span style="font-family:var(--font-head);font-size:1.4rem;letter-spacing:2px;color:var(--neon);margin-right:12px">🔔 ${sanitize(team)}</span>
-    <button class="btn btn-success btn-sm" onclick="buzzerMark(true)" style="padding:8px 20px">✓ Correct (+1)</button>
-    <button class="btn btn-danger btn-sm" onclick="buzzerMark(false)" style="padding:8px 20px">✗ Wrong (-1)</button>`;
-      const old = document.getElementById('buzzerVerdict'); if (old) old.remove();
-      main.appendChild(verdictArea)
+      buzzerState.phase = 'question';
+      buzzerState.buzzedTeam = null;
+      buzzerState.answered = false;
+
+      let html = '<div class="buzzer-q-num">Question ' + (buzzerState.current + 1) + '</div>';
+      if (q.image) html += '<div class="buzzer-question"><img src="' + q.image + '" style="max-width:100%;border-radius:12px;margin-bottom:15px"></div>';
+      html += '<div class="buzzer-question">' + sanitize(q.q) + '</div>';
+      html += '<div class="buzzer-options">' + q.options.map((o, i) => 
+        '<div class="buzzer-opt" id="bopt' + i + '"><span class="b-letter">' + String.fromCharCode(65 + i) + '</span>' + sanitize(o) + '</div>'
+      ).join('') + '</div>';
+      
+      html += '<p style="color:var(--neon);font-family:var(--font-head);font-size:1.4rem;letter-spacing:3px;margin:12px 0">AWARD POINTS MANUALLY</p>';
+      html += '<div class="buzzer-teams" id="buzzerTeams">' + buzzerState.teams.map(t => {
+        const teamEscaped = sanitize(t).replace(/'/g, "\\'");
+        return '<button class="buzzer-team-btn" onclick="teamBuzzedManually(\'' + teamEscaped + '\')">' + sanitize(t) + '</button>';
+      }).join('') + '</div>';
+      
+      html += '<div id="buzzerVerdictArea" style="margin: 15px 0; min-height: 50px;"></div>';
+
+      html += '<div class="buzzer-controls" style="margin-top:10px">' +
+        '<button class="btn btn-outline btn-sm" onclick="buzzerShowAnswer()">👁 Show Answer</button>' +
+        '<button class="btn btn-outline btn-sm" onclick="buzzerSkipQuestion()">⏭ Skip</button>' +
+        '<button class="btn btn-danger btn-sm" onclick="buzzerBothWrong()" style="padding: 5px 15px;">❌ Both Wrong (-1)</button>' +
+      '</div>';
+
+      main.innerHTML = html;
     }
 
     function buzzerMark(correct) {
       if (!buzzerState || !buzzerState.buzzedTeam) return;
-      const team = buzzerState.buzzedTeam, q = buzzerState.questions[buzzerState.current];
-      const scores = getScores(); const delta = correct ? 1 : -1;
-      scores[team] = (scores[team] || 0) + delta; saveScores(scores);
+      const team = buzzerState.buzzedTeam;
+      const q = buzzerState.questions[buzzerState.current];
+      const scores = getScores(); 
+      const delta = correct ? 1 : -1;
+      scores[team] = (scores[team] || 0) + delta; 
+      saveScores(scores);
+
       if (correct) {
-        sfxCorrect(); buzzerState.answered = true;
-        // FIX: resolve correct answer via answerHash
-        const correctMarkIdx = q.options.findIndex(opt => hashOption(opt) === q.answerHash);
-        if (correctMarkIdx >= 0) document.getElementById('bopt' + correctMarkIdx).classList.add('b-correct');
-        toast(team + ' +1 point!', 'success')
-      }
-      else {
-        sfxWrong(); buzzerState.buzzedTeam = null; buzzerState.phase = 'question';
-        const v = document.getElementById('buzzerVerdict'); if (v) v.remove();
-        // Reset buzzes so other teams can buzz again
-        
-        toast(team + ' -1 point! Others can buzz.', 'error')
+        sfxCorrect(); 
+        buzzerState.answered = true;
+        const correctIdx = q.options.findIndex(opt => hashOption(opt) === q.answerHash);
+        if (correctIdx >= 0) {
+          const optEl = document.getElementById('bopt' + correctIdx);
+          if (optEl) optEl.classList.add('b-correct');
+        }
+        toast(team + ' +1 point!', 'success');
+      } else {
+        sfxWrong(); 
+        buzzerState.buzzedTeam = null; 
+        const area = document.getElementById('buzzerVerdictArea');
+        if (area) area.innerHTML = '';
+        toast(team + ' -1 point! Others can answer.', 'error');
       }
       updateBuzzerScoreboard();
+
       if (correct) {
         setTimeout(() => {
-          const nav = document.createElement('div'); nav.className = 'buzzer-controls'; nav.style.marginTop = '16px';
+          const nav = document.createElement('div'); 
+          nav.className = 'buzzer-controls'; 
+          nav.style.marginTop = '16px';
           nav.innerHTML = buzzerState.current < buzzerState.questions.length - 1 ?
-            `<button class="btn btn-neon" onclick="buzzerNextQuestion()">Next Question →</button>` :
-            `<button class="btn btn-neon" onclick="buzzerFinish()">🏆 Finish Round</button>`;
-          document.getElementById('buzzerMain').appendChild(nav)
-        }, 600)
+            '<button class="btn btn-neon" onclick="buzzerNextQuestion()">Next Question →</button>' :
+            '<button class="btn btn-neon" onclick="buzzerFinish()">🏆 Finish Round</button>';
+          document.getElementById('buzzerMain').appendChild(nav);
+        }, 600);
       }
     }
-
     function buzzerShowAnswer() {
       const q = buzzerState.questions[buzzerState.current];
       // FIX: resolve correct answer via answerHash
