@@ -2294,21 +2294,22 @@ function checkAnswer(){
 
 function finishQuiz(){
   clearInterval(quizTimer);confetti();
-  const s=quizState.score,total=quizState.questions.length,pct=Math.round(s/total*100);
+  const pointsEarned = quizState.score - (quizState.startScore || 0);
+  const total=quizState.questions.length,pct=Math.round(pointsEarned/total*100);
   document.getElementById('quizArea').innerHTML=`<div class="quiz-wrap">
     <div class="card card-glow result-card">
       <div style="font-size:2.5rem;margin-bottom:16px">${pct>=80?'🏆':pct>=50?'🎯':'💪'}</div>
       <h2 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;margin-bottom:20px">Well done, ${sanitize(currentPlayer.name)}!</h2>
-      <span class="result-score">${s}</span>
+      <span class="result-score">${pointsEarned}</span>
       <span class="result-label">out of ${total}</span>
       <div class="result-stats">
-        <div class="result-stat"><div class="sv" style="color:var(--success)">${s}</div><div class="sl">Correct</div></div>
-        <div class="result-stat"><div class="sv" style="color:var(--danger)">${total-s}</div><div class="sl">Wrong</div></div>
+        <div class="result-stat"><div class="sv" style="color:var(--success)">${pointsEarned}</div><div class="sl">Correct</div></div>
+        <div class="result-stat"><div class="sv" style="color:var(--danger)">${total-pointsEarned}</div><div class="sl">Wrong</div></div>
         <div class="result-stat"><div class="sv" style="color:var(--gold)">${pct}%</div><div class="sl">Score</div></div>
       </div>
       <button class="btn btn-outline" style="margin-top:8px" onclick="navigate('player-dash')">← Back to Dashboard</button>
     </div></div>`;
-  const pointsEarned = s - (quizState.startScore || 0);
+  const s = quizState.score; // total accumulated score
   const players=getPlayers(),idx=players.findIndex(p=>p.phone===currentPlayer.phone);
   if(idx>-1){
     players[idx].score=s;
@@ -2321,7 +2322,7 @@ function finishQuiz(){
   }
   const scores=getScores();scores[currentPlayer.team]=(scores[currentPlayer.team]||0)+pointsEarned;saveScores(scores);
   LS.set('answers_' + currentPlayer.code, null); // clear session data
-  toast('Score saved: '+s+'/'+total,'success')}
+  toast('Score saved: '+pointsEarned+'/'+total,'success')}
 
 /* ─── ADMIN: PLAYERS TABLE ─── */
 function renderPlayersTable(){
