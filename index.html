@@ -772,30 +772,26 @@ function clearFieldError(fieldId){
   if(existing)existing.remove();
 }
 
-// FIX: Bug 3 — Danger zone confirmation modal with DELETE input
+// FIX: Bug 3 — Danger zone confirmation modal with Password input
 function showDangerConfirmModal(warningMsg,actionFn){
-  const modalHtml=`<h3 style="font-family:var(--font-head);font-size:1.5rem;letter-spacing:2px;margin-bottom:12px;color:var(--danger)">⚠ CONFIRM DESTRUCTIVE ACTION</h3>
+  const modalHtml=`<h3 style="font-family:var(--font-head);font-size:1.5rem;letter-spacing:2px;margin-bottom:12px;color:var(--danger)">⚠️ ADMIN AUTHORIZATION REQUIRED</h3>
     <p style="margin-bottom:16px;color:var(--text-mid);font-size:.9rem;line-height:1.65">${warningMsg}</p>
-    <input class="danger-confirm-input" id="dangerConfirmInput" placeholder='Type "DELETE" to confirm' autocomplete="off" spellcheck="false">
+    <input type="password" class="danger-confirm-input" id="dangerPasswordInput" placeholder='Enter Admin Password' autocomplete="new-password">
     <div style="display:flex;gap:8px;margin-top:8px">
-      <button class="btn btn-danger btn-danger-confirm" id="dangerConfirmBtn" onclick="executeDangerAction()">Confirm</button>
+      <button class="btn btn-danger btn-danger-confirm enabled" id="dangerConfirmBtn" onclick="executeDangerAction()">Confirm</button>
       <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
     </div>`;
   showModal(modalHtml);
   window._dangerActionFn=actionFn;
-  const inp=document.getElementById('dangerConfirmInput');
-  const btn=document.getElementById('dangerConfirmBtn');
-  inp.addEventListener('input',()=>{
-    if(inp.value==='DELETE'){btn.classList.add('enabled')}
-    else{btn.classList.remove('enabled')}
-  });
   // Escape key closes modal
   const escHandler=e=>{if(e.key==='Escape'){closeModal();document.removeEventListener('keydown',escHandler)}};
   document.addEventListener('keydown',escHandler);
 }
-function executeDangerAction(){
-  const inp=document.getElementById('dangerConfirmInput');
-  if(!inp||inp.value!=='DELETE'){toast('Type DELETE to confirm','error');return;}
+async function executeDangerAction(){
+  const inp=document.getElementById('dangerPasswordInput');
+  if(!inp||!inp.value){toast('Enter admin password to confirm','error');return;}
+  const pHash = await hashPassword(inp.value);
+  if(pHash !== ADMIN_PASS_HASH){toast('Incorrect Admin Password','error');return;}
   if(typeof window._dangerActionFn==='function')window._dangerActionFn();
   closeModal();
   window._dangerActionFn=null;
