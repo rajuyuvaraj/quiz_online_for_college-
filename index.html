@@ -3119,12 +3119,7 @@
     let currentPlayer = null, isAdmin = false, quizState = null;
 
     window.onSyncUpdate = (k) => {
-      if (k === 'quizmania_buzzer') {
-        // Real-time buzzer sync
-        if (isAdmin && document.getElementById('buzzerOverlay')?.classList.contains('active')) {
-          updateBuzzerBuzzFeed();
-        }
-        if (!isAdmin && currentPlayer) {
+      if (!isAdmin && currentPlayer) {
           updatePlayerBuzzerUI();
         }
       }
@@ -4826,6 +4821,30 @@
     }
 
     /* ─── BUZZER ROUND ─── */
+    function teamBuzzedManually(team) {
+      if (!buzzerState || buzzerState.answered) return;
+      sfxBuzz();
+      buzzerState.buzzedTeam = team;
+      const main = document.getElementById('buzzerVerdictArea');
+      main.innerHTML = \`<div class="buzzer-verdict" style="margin:0">
+        <span style="font-family:var(--font-head);font-size:1.4rem;letter-spacing:2px;color:var(--neon);margin-right:12px">🔔 \${sanitize(team)}</span>
+        <button class="btn btn-success btn-sm" onclick="buzzerMark(true)" style="padding:8px 20px">✓ Correct (+1)</button>
+        <button class="btn btn-danger btn-sm" onclick="buzzerMark(false)" style="padding:8px 20px">✗ Wrong (-1)</button>
+      </div>\`;
+    }
+
+    function buzzerBothWrong() {
+      if (!buzzerState || buzzerState.answered) return;
+      const scores = getScores();
+      buzzerState.teams.forEach(t => {
+        scores[t] = (scores[t] || 0) - 1;
+      });
+      saveScores(scores);
+      sfxWrong();
+      toast('Both teams penalized -1 point!', 'error');
+      buzzerShowAnswer(); // Auto show answer and end question
+    }
+
     let buzzerState = null;
 
     function launchBuzzerMode() {
@@ -4848,32 +4867,21 @@
     }
 
     function showBuzzerWaiting() {
-      const main = document.getElementById('buzzerMain');
-      const num = buzzerState.current + 1, total = buzzerState.questions.length;
-      document.getElementById('buzzerQCount').textContent = `Q${num}/${total}`;
-      main.innerHTML = `<div class="buzzer-waiting">READY</div>
-    <div class="buzzer-controls" style="margin-top:30px">
-      <button class="btn btn-neon" onclick="buzzerRevealQuestion()" style="padding:14px 36px;font-size:1.1rem">🎯 Reveal Question</button>
-    </div>
-    <p style="color:var(--text-dim);font-size:.82rem;margin-top:14px">Question ${num} of ${total}</p>`
-    }
-
-    function buzzerRevealQuestion() {
-      sfxReveal();
-      const q = buzzerState.questions[buzzerState.current];
-      const main = document.getElementById('buzzerMain');
-      buzzerState.phase = 'question'; buzzerState.buzzedTeam = null; buzzerState.answered = false;
-      const imgHtml = q.image ? `<img src="${q.image}" alt="Question image">` : '';
-      main.innerHTML = `<div class="buzzer-q-num">QUESTION ${buzzerState.current + 1}</div>
-    <div class="buzzer-question">${q.q}${imgHtml}</div>
-    <div class="buzzer-options" id="buzzerOpts">${q.options.map((o, i) =>
-        `<div class="buzzer-opt" id="bopt${i}"><span class="b-letter">${String.fromCharCode(65 + i)}</span>${o}</div>`).join('')}</div>
-    <p style="color:var(--neon);font-family:var(--font-head);font-size:1.4rem;letter-spacing:3px;margin:12px 0">WAITING FOR BUZZ...</p>
+          const main = document.getElementById('buzzerMain');
+    main.innerHTML = `<div class="buzzer-q-num">Question ${buzzerState.current + 1}</div>
+    <div class="buzzer-question">${q.image ? \`<img src="\${q.image}" style="max-width:100%;border-radius:12px;margin-bottom:15px">\` : ''} ${sanitize(q.q)}</div>
+    <div class="buzzer-options">${q.options.map((o, i) => \`<div class="buzzer-opt" id="bopt\${i}"><span class="b-letter">\${String.fromCharCode(65 + i)}</span>\${o}</div>\`).join('')}</div>
+    
+    <p style="color:var(--neon);font-family:var(--font-head);font-size:1.4rem;letter-spacing:3px;margin:12px 0">AWARD POINTS MANUALLY</p>
     <div class="buzzer-teams" id="buzzerTeams">${buzzerState.teams.map(t =>
-          `<button class="buzzer-team-btn" onclick="teamBuzzed('${sanitize(t).replace(/'/g, "\\\'")}')">${sanitize(t)}</button>`).join('')}</div>
+          \`<button class="buzzer-team-btn" onclick="teamBuzzedManually('\\\${sanitize(t).replace(/'/g, "\\\\\\\\'")}')">\\\${sanitize(t)}</button>\`).join('')}</div>
+    
+    <div id="buzzerVerdictArea" style="margin: 15px 0; min-height: 50px;"></div>
+
     <div class="buzzer-controls" style="margin-top:10px">
       <button class="btn btn-outline btn-sm" onclick="buzzerShowAnswer()">👁 Show Answer</button>
       <button class="btn btn-outline btn-sm" onclick="buzzerSkipQuestion()">⏭ Skip</button>
+      <button class="btn btn-danger btn-sm" onclick="buzzerBothWrong()" style="padding: 5px 15px;">❌ Both Wrong (-1)</button>
     </div>`;
       main.classList.add('buzzer-flash'); setTimeout(() => main.classList.remove('buzzer-flash'), 400)
     }
@@ -4908,7 +4916,7 @@
         sfxWrong(); buzzerState.buzzedTeam = null; buzzerState.phase = 'question';
         const v = document.getElementById('buzzerVerdict'); if (v) v.remove();
         // Reset buzzes so other teams can buzz again
-        saveBuzzerState({ questionNum: buzzerState.current, buzzes: [], acceptingBuzzes: true });
+        
         toast(team + ' -1 point! Others can buzz.', 'error')
       }
       updateBuzzerScoreboard();
