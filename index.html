@@ -962,6 +962,17 @@ window.onSyncUpdate = (k) => {
     if(!isAdmin && currentPlayer && quizState === null) {
       if(document.getElementById('player-dash').classList.contains('active')) loadPlayerDash();
     }
+    if(!isAdmin && !currentPlayer && k === 'quizmania_players') {
+      const savedSession = getPlayerSession();
+      if (savedSession) {
+        const player = getPlayers().find(p => p.code === savedSession.code);
+        if (player) {
+          currentPlayer = player;
+          document.getElementById('navUser').textContent = player.name;
+          navigate('player-dash');
+        }
+      }
+    }
   }
 };
 
@@ -982,6 +993,14 @@ updateCountdown();setInterval(updateCountdown,1000);
 
 /* ─── APP BOOTSTRAP ─── */
 document.addEventListener('DOMContentLoaded', () => {
+  if (isAdminAuthenticated()) {
+    isAdmin = true;
+    currentPlayer = null;
+    document.getElementById('navUser').textContent = '\ud83d\udee1 Quizmaster';
+    navigate('admin-dash');
+    return;
+  }
+
   const savedSession = getPlayerSession();
   if (savedSession) {
     const player = getPlayers().find(p => p.code === savedSession.code);
