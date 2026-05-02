@@ -3097,6 +3097,16 @@
             LS.set(k, finalVal);
             if (typeof window.onSyncUpdate === 'function') window.onSyncUpdate(k);
           });
+          'quizmania_buzzer': { questionNum: 0, buzzes: [], acceptingBuzzes: false }
+        };
+        Object.keys(defaultVals).forEach(k => {
+          db.ref(k).on('value', snap => {
+            const val = snap.val();
+            const finalVal = val !== null ? val : defaultVals[k];
+            Memory[k] = finalVal;
+            LS.set(k, finalVal);
+            if (typeof window.onSyncUpdate === 'function') window.onSyncUpdate(k);
+          });
         });
       }
     };
@@ -3119,17 +3129,13 @@
     let currentPlayer = null, isAdmin = false, quizState = null;
 
     window.onSyncUpdate = (k) => {
-      if (!isAdmin && currentPlayer) {
-          updatePlayerBuzzerUI();
-        }
-      }
       if (k === 'quizmania_active_round' || k === 'quizmania_rounds' || k === 'quizmania_players' || k === 'quizmania_qualifications') {
         if (isAdmin) {
-          const adminEl = document.getElementById('page-admin-dash'); // FIX: correct element ID
+          const adminEl = document.getElementById('page-admin-dash');
           if (adminEl && adminEl.classList.contains('active')) renderAdminLeaderboard();
         }
         if (!isAdmin && currentPlayer && quizState === null) {
-          const playerEl = document.getElementById('page-player-dash'); // FIX: correct element ID
+          const playerEl = document.getElementById('page-player-dash');
           if (playerEl && playerEl.classList.contains('active')) loadPlayerDash();
         }
         if (!isAdmin && !currentPlayer && k === 'quizmania_players') {
@@ -3144,7 +3150,7 @@
           }
         }
       }
-    };
+    };  };
 
     // Initialize listeners globally
     Sync.init();
