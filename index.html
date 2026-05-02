@@ -921,15 +921,21 @@ const Sync = {
   },
   init: () => {
     if(!db) return;
-    const keys = ['quizmania_players', 'quizmania_questions', 'quizmania_scores', 'quizmania_rounds', 'quizmania_active_round', 'quizmania_qualifications'];
-    keys.forEach(k => {
+    const defaultVals = {
+      'quizmania_players': [],
+      'quizmania_questions': [],
+      'quizmania_scores': {},
+      'quizmania_rounds': {Preliminary:'inactive',Visual:'inactive',Buzzer:'inactive',Finale:'inactive'},
+      'quizmania_active_round': '',
+      'quizmania_qualifications': {}
+    };
+    Object.keys(defaultVals).forEach(k => {
       db.ref(k).on('value', snap => {
         const val = snap.val();
-        if(val) {
-          Memory[k] = val;
-          LS.set(k, val);
-          if(typeof window.onSyncUpdate === 'function') window.onSyncUpdate(k);
-        }
+        const finalVal = val !== null ? val : defaultVals[k];
+        Memory[k] = finalVal;
+        LS.set(k, finalVal);
+        if(typeof window.onSyncUpdate === 'function') window.onSyncUpdate(k);
       });
     });
   }
