@@ -3007,10 +3007,12 @@
     window.onSyncUpdate = (k) => {
       if (k === 'quizmania_active_round' || k === 'quizmania_rounds' || k === 'quizmania_players' || k === 'quizmania_qualifications') {
         if (isAdmin) {
-          if (document.getElementById('admin-dash').classList.contains('active')) renderAdminLeaderboard();
+          const adminEl = document.getElementById('page-admin-dash'); // FIX: correct element ID
+          if (adminEl && adminEl.classList.contains('active')) renderAdminLeaderboard();
         }
         if (!isAdmin && currentPlayer && quizState === null) {
-          if (document.getElementById('player-dash').classList.contains('active')) loadPlayerDash();
+          const playerEl = document.getElementById('page-player-dash'); // FIX: correct element ID
+          if (playerEl && playerEl.classList.contains('active')) loadPlayerDash();
         }
         if (!isAdmin && !currentPlayer && k === 'quizmania_players') {
           const savedSession = getPlayerSession();
@@ -4124,7 +4126,7 @@
       <p style="color:var(--text-dim);font-size:.8rem;margin-top:8px">Watch the live leaderboards below.</p></div>`;
         qa.style.display = 'none'
       }
-      else if ((ar === 'Preliminary' || ar === 'Visual') && !isDone) {
+      else if (ar && !isDone) {
         dc.innerHTML = `<div class="card card-glow" style="text-align:center;padding:36px 24px">
       <div style="font-size:2.5rem;margin-bottom:12px">🎯</div>
       <h3 style="font-family:var(--font-head);font-size:1.8rem;letter-spacing:2px;color:var(--neon);margin-bottom:8px">${ar.toUpperCase()} ROUND IS LIVE!</h3>
@@ -4132,7 +4134,7 @@
       <button class="btn btn-neon" onclick="startQuiz()" style="padding:12px 32px;font-size:1rem">Start Quiz →</button></div>`;
         qa.style.display = 'none'
       }
-      else if ((ar === 'Preliminary' || ar === 'Visual') && isDone) {
+      else if (ar && isDone) {
         dc.innerHTML = `<div class="card card-glow" style="text-align:center;padding:36px 24px">
       <div style="color:var(--success);font-size:2.5rem;margin-bottom:12px">✓</div>
       <h3 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;color:var(--success);margin-bottom:8px">QUIZ COMPLETED</h3>
@@ -4140,12 +4142,7 @@
       <span style="display:block;color:var(--text-dim);font-size:.78rem;text-transform:uppercase;letter-spacing:1px;margin-top:4px">Your Score</span></div>`;
         qa.style.display = 'none'
       }
-      else if (ar) {
-        dc.innerHTML = `<div class="card" style="text-align:center;padding:32px">
-      <h3 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;margin-bottom:8px">${sanitize(ar)} ROUND</h3>
-      <p style="color:var(--text-dim);margin-top:8px">This round is managed by the quizmaster. Follow instructions on screen!</p></div>`;
-        qa.style.display = 'none'
-      }
+      
       else {
         // FIX: Bug 13 — Friendly waiting message instead of indefinite loading
         dc.innerHTML = `<div class="card" style="text-align:center;padding:32px">
