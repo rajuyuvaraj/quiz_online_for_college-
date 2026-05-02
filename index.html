@@ -3097,16 +3097,6 @@
             LS.set(k, finalVal);
             if (typeof window.onSyncUpdate === 'function') window.onSyncUpdate(k);
           });
-          'quizmania_buzzer': { questionNum: 0, buzzes: [], acceptingBuzzes: false }
-        };
-        Object.keys(defaultVals).forEach(k => {
-          db.ref(k).on('value', snap => {
-            const val = snap.val();
-            const finalVal = val !== null ? val : defaultVals[k];
-            Memory[k] = finalVal;
-            LS.set(k, finalVal);
-            if (typeof window.onSyncUpdate === 'function') window.onSyncUpdate(k);
-          });
         });
       }
     };
@@ -3150,7 +3140,7 @@
           }
         }
       }
-    };  };
+    };
 
     // Initialize listeners globally
     Sync.init();
