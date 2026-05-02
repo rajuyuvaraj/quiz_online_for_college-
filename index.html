@@ -2057,7 +2057,13 @@ function loadPlayerDash(){
 
   const isDone = ar === 'Preliminary' ? (currentPlayer.quizDone_Preliminary || currentPlayer.quizDone) : currentPlayer[`quizDone_${ar}`];
 
-  if(!isQualified){
+  if(currentPlayer.isDisqualified){
+    dc.innerHTML=`<div class="card card-glow" style="text-align:center;padding:36px 24px;border-color:rgba(244,63,94,.4);box-shadow:0 0 20px rgba(244,63,94,.1)">
+      <div style="font-size:2.5rem;margin-bottom:12px">☠</div>
+      <h3 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;color:var(--danger);margin-bottom:8px">DISQUALIFIED</h3>
+      <p style="color:var(--text-dim)">Thank you for participating. You have been disqualified.</p></div>`;
+    qa.style.display='none'}
+  else if(!isQualified){
     dc.innerHTML=`<div class="card card-glow" style="text-align:center;padding:36px 24px;border-color:rgba(244,63,94,.4);box-shadow:0 0 20px rgba(244,63,94,.1)">
       <div style="font-size:2.5rem;margin-bottom:12px">☠</div>
       <h3 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;color:var(--danger);margin-bottom:8px">ELIMINATED</h3>
@@ -2341,13 +2347,28 @@ function renderPlayersTable(){
     <div class="stat-box"><div class="sv">${[...new Set(players.map(p=>p.team))].length}</div><div class="sl">Teams</div></div>
     <div class="stat-box"><div class="sv">${players.filter(p=>p.quizDone).length}</div><div class="sl">Completed</div></div>`;
   const tbody=document.querySelector('#playersTable tbody');tbody.innerHTML='';
-  filtered.forEach(p=>{tbody.innerHTML+=`<tr>
+  filtered.forEach(p=>{
+    const disBtn = p.isDisqualified ? `<button class="btn btn-outline btn-sm" onclick="toggleDisqualify('${sanitize(p.phone)}')">Undisqualify</button>` : `<button class="btn btn-danger btn-sm" style="background:var(--warning)" onclick="toggleDisqualify('${sanitize(p.phone)}')">Disqualify</button>`;
+    const trStyle = p.isDisqualified ? 'opacity: 0.5; filter: grayscale(1);' : '';
+    tbody.innerHTML+=`<tr style="${trStyle}">
     <td>${sanitize(p.name)}</td><td class="mono">${sanitize(p.phone)}</td><td>${sanitize(p.college)}</td><td>${sanitize(p.team)}</td>
     <td class="mono" style="color:var(--neon)">${sanitize(p.code)}</td>
     <td class="mono">${p.score}</td>
-    <td><button class="btn btn-danger btn-sm" onclick="deletePlayer('${sanitize(p.phone)}')">Delete</button></td></tr>`})} // FIX: Bug 14 — sanitize all player data
+    <td style="display:flex;gap:4px;flex-wrap:wrap">${disBtn}<button class="btn btn-danger btn-sm" onclick="deletePlayer('${sanitize(p.phone)}')">Delete</button></td></tr>`})} // FIX: Bug 14 — sanitize all player data
 
 function deletePlayer(phone){if(!confirm('Delete this player?'))return;const players=getPlayers().filter(p=>p.phone!==phone);savePlayers(players);renderPlayersTable();toast('Player deleted','info')}
+
+function toggleDisqualify(phone){
+  if(!confirm('Toggle disqualification for this player?'))return;
+  const players=getPlayers();
+  const idx=players.findIndex(p=>p.phone===phone);
+  if(idx>-1){
+    players[idx].isDisqualified = !players[idx].isDisqualified;
+    savePlayers(players);
+    renderPlayersTable();
+    toast(players[idx].isDisqualified ? 'Player disqualified' : 'Player reinstated', 'success');
+  }
+}
 
 // FIX: Bug 15 — Export CSV empty check
 function exportCSV(){
