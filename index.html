@@ -2195,14 +2195,14 @@ function renderQuestion(){
       <div class="timer-num" id="qTimer">${isAnswered ? '0' : '30'}</div>
     </div>
     <div class="card">
-      <p class="q-text">${q.q}</p>
+      <p class="q-text">${sanitize(q.q)}</p>
       ${q.image?`<img src="${q.image}" class="q-img-quiz" alt="Question image">`:''}
       <div class="q-options" id="qOptionsBlock">${q.options.map((o,i)=>{
         let extraCls = '';
         if (isAnswered && priorAns === i) extraCls = 'selected locked';
         else if (isAnswered) extraCls = 'disabled';
         return `<div class="q-opt ${extraCls}" ${isAnswered ? '' : `onclick="selectOption(${i})"`} id="opt${i}">
-        <span class="q-opt-letter">${String.fromCharCode(65+i)}</span>${o}</div>`;
+        <span class="q-opt-letter">${String.fromCharCode(65+i)}</span>${sanitize(o)}</div>`;
       }).join('')}
       </div>
     </div>
