@@ -818,7 +818,8 @@ function guardedPrint(){
   setInterval(()=>{
     const before=new Date().getTime();
     debugger;
-    if(new Date().getTime()-before>100){
+    // FIX: Bug 13 — Increase threshold to 500ms to prevent false positives on slow devices
+    if(new Date().getTime()-before>500){
       document.body.innerHTML='<div style="padding:50px;text-align:center;color:red;font-size:2rem;font-weight:bold;background:#000;height:100vh">SECURITY VIOLATION DETECTED.</div>';
     }
   }, 100);
@@ -867,10 +868,11 @@ function closeModal(){document.getElementById('modalOverlay').classList.remove('
 // INSTRUCTIONS: Paste your Firebase config object here.
 const firebaseConfig = {
   apiKey: "AIzaSyDw3O41I3b4yFqKsEnwK1rBvHuBKbp2a0M",
-  authDomain: "qiuz-275e1.firebaseapp.com",
-  databaseURL: "https://qiuz-275e1-default-rtdb.firebaseio.com",
-  projectId: "qiuz-275e1",
-  storageBucket: "qiuz-275e1.firebasestorage.app",
+  // FIX: Bug 11 — Correct authDomain and config typos
+  authDomain: "quiz-275e1.firebaseapp.com",
+  databaseURL: "https://quiz-275e1-default-rtdb.firebaseio.com",
+  projectId: "quiz-275e1",
+  storageBucket: "quiz-275e1.firebasestorage.app",
   messagingSenderId: "868229606672",
   appId: "1:868229606672:web:e5ef4164ecee634f004995",
   measurementId: "G-M94GV6Q25Y"
@@ -883,6 +885,8 @@ try {
     db = firebase.database();
   }
 } catch(e) { console.error("Firebase init error", e); }
+// FIX: Bug 5 — Firebase stale check handling
+if (!db) console.warn("Firebase unavailable — running in offline mode");
 
 /* ─── DATA STORE LAYER ─── */
 const STORAGE_KEY_PREFIX = 'qm_';
@@ -1093,7 +1097,9 @@ function genCode() {
 }
 
 function normalizeCollegeName(name) {
-  return name.trim().toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+function normalizeCollegeName(name) {
+  // FIX: Bug 12 — Sanitize input to prevent XSS
+  return sanitize(name.trim().toLowerCase().replace(/\b\w/g, c => c.toUpperCase()));
 }
 
 // FIX: Bugs 4,5,6,7 — Registration with full validation
@@ -1176,18 +1182,9 @@ function finalizeRegistration(name,phone,college,team){
   const printBtn=document.getElementById('printCodeBtn');if(printBtn)printBtn.disabled=false;
   toast('Registration successful!','success');
 
-  // FIX: Bug R-5 — Redirect timer
-  let countdown = 30;
+  // FIX: Bug 14 — Replace 30-second auto-redirect with a manual button
   const timerEl = document.getElementById('reg-redirect-timer');
-  timerEl.textContent = `Redirecting to login in ${countdown}s...`;
-  window._regInterval = setInterval(() => {
-    countdown--;
-    timerEl.textContent = `Redirecting to login in ${countdown}s...`;
-    if (countdown <= 0) {
-      clearInterval(window._regInterval);
-      navigate('player-login');
-    }
-  }, 1000);
+  timerEl.innerHTML = `<button class="btn btn-outline" style="margin-top:10px" onclick="navigate('player-login')">Go to Login →</button>`;
 }
 
 function shareWhatsApp() {
@@ -1214,6 +1211,8 @@ function recoverCode() {
   } else {
     res.textContent = 'No registration found. Please check your name and phone.';
     res.style.color = 'var(--danger)';
+    // FIX: Bug 6 — Reset border color on failure
+    document.getElementById('recResult').style.borderColor = 'var(--danger)';
   }
 }
 
@@ -1266,7 +1265,8 @@ function playerLogin(){
     expiresAt: Date.now() + (24 * 60 * 60 * 1000)
   };
   sessionStorage.setItem('qm_playerSession', JSON.stringify(sessionData));
-  if (document.getElementById('keepLoggedIn').checked) {
+  // FIX: Bug 9 — Null check for keepLoggedIn
+  if (document.getElementById('keepLoggedIn')?.checked) {
     localStorage.setItem('qm_playerSession', JSON.stringify(sessionData));
   }
   
@@ -2153,14 +2153,15 @@ function startQuiz(){
     return cleaned;
   });
   
-  // FIX: Bug D-3 — Restore existing answers from localStorage if present
+  // FIX: Bug 3 — Restore existing answers from localStorage if present
   const prevAnswers = LS.get('answers_' + currentPlayer.code) || {};
   let startIdx = 0;
   for (let i=0; i<shuffled.length; i++) {
     if (prevAnswers[shuffled[i].id] !== undefined) {
-      startIdx = i; // at least go to here
+      startIdx = i + 1; // start on the next unanswered question
     }
   }
+  startIdx = Math.min(startIdx, shuffled.length - 1 < 0 ? 0 : shuffled.length - 1);
 
   quizState={
     questions:shuffled,
@@ -2301,13 +2302,17 @@ function checkAnswer(){
       currentPlayer.scoreChecksum = players[idx].scoreChecksum;
       savePlayers(players);
     }
+    // FIX: Bug 4 — Safely update team score incrementally
+    const scores = getScores();
+    scores[currentPlayer.team] = (scores[currentPlayer.team] || 0) + 1;
+    saveScores(scores);
   }
 }
 
 function finishQuiz(){
   clearInterval(quizTimer);confetti();
   const pointsEarned = quizState.score - (quizState.startScore || 0);
-  const total=quizState.questions.length,pct=Math.round(pointsEarned/total*100);
+  const total=quizState.questions.length,pct=Math.round((quizState.score)/total*100);
   document.getElementById('quizArea').innerHTML=`<div class="quiz-wrap">
     <div class="card card-glow result-card">
       <div style="font-size:2.5rem;margin-bottom:16px">${pct>=80?'🏆':pct>=50?'🎯':'💪'}</div>
@@ -2332,9 +2337,9 @@ function finishQuiz(){
     savePlayers(players);
     currentPlayer=players[idx];
   }
-  const scores=getScores();scores[currentPlayer.team]=(scores[currentPlayer.team]||0)+pointsEarned;saveScores(scores);
+  // FIX: Bug 4 — Removed double team score increment here as checkAnswer handles it
   LS.set('answers_' + currentPlayer.code, null); // clear session data
-  toast('Score saved: '+pointsEarned+'/'+total,'success')}
+  toast('Quiz complete!','success')}
 
 /* ─── ADMIN: PLAYERS TABLE ─── */
 function renderPlayersTable(){
@@ -2431,11 +2436,11 @@ function renderQuestions(){
       </div></div>`})} // FIX: Bug 14 — sanitize all question data
 
 function showAddQuestionModal(edit=null){
-  let cIdx = edit ? edit.answer : 0;
-  if (cIdx === undefined && edit && edit.answerHash) {
+  let cIdx = 0;
+  if (edit && edit.answerHash) {
       cIdx = edit.options.findIndex(opt => hashOption(opt) === edit.answerHash);
   }
-  if (cIdx === -1 || cIdx === undefined) cIdx = 0;
+  if (cIdx === -1) cIdx = 0;
 
   const q=edit||{q:'',options:['','','',''],answerHash:'',category:'Science & Tech',round:'Preliminary',difficulty:'Medium',image:''};
   const cats=['Science & Tech','General Knowledge','Logical Reasoning','Current Affairs','Rapid Fire'];
@@ -2642,7 +2647,9 @@ function buzzerMark(correct){
   const scores=getScores();const delta=correct?1:-1;
   scores[team]=(scores[team]||0)+delta;saveScores(scores);
   if(correct){sfxCorrect();buzzerState.answered=true;
-    document.getElementById('bopt'+q.answer).classList.add('b-correct');
+    // FIX: Bug 1 — resolve index from answerHash
+    const correctIdx = q.options.findIndex(opt => hashOption(opt) === q.answerHash);
+    document.getElementById('bopt'+correctIdx).classList.add('b-correct');
     toast(team+' +1 point!','success')}
   else{sfxWrong();buzzerState.buzzedTeam=null;buzzerState.phase='question';
     document.querySelectorAll('.buzzer-team-btn').forEach(b=>b.classList.remove('buzzed'));
@@ -2658,7 +2665,9 @@ function buzzerMark(correct){
 
 function buzzerShowAnswer(){
   const q=buzzerState.questions[buzzerState.current];
-  document.getElementById('bopt'+q.answer).classList.add('b-correct');buzzerState.answered=true;
+  // FIX: Bug 1 — resolve index from answerHash
+  const correctIdx = q.options.findIndex(opt => hashOption(opt) === q.answerHash);
+  document.getElementById('bopt'+correctIdx).classList.add('b-correct');buzzerState.answered=true;
   sfxCorrect()}
 
 function buzzerSkipQuestion(){
@@ -2862,7 +2871,9 @@ function finaleMarkTeam(team,correct){
 
 function finaleRevealAnswer(){
   const q=finaleState.questions[finaleState.current];
-  document.getElementById('fopt'+q.answer).classList.add('b-correct');sfxCorrect()}
+  // FIX: Bug 1 — resolve index from answerHash
+  const correctIdx = q.options.findIndex(opt => hashOption(opt) === q.answerHash);
+  document.getElementById('fopt'+correctIdx).classList.add('b-correct');sfxCorrect()}
 
 function finaleProcessResults(){
   const idx=finaleState.current;
