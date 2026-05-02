@@ -1097,7 +1097,6 @@ function genCode() {
 }
 
 function normalizeCollegeName(name) {
-function normalizeCollegeName(name) {
   // FIX: Bug 12 — Sanitize input to prevent XSS
   return sanitize(name.trim().toLowerCase().replace(/\b\w/g, c => c.toUpperCase()));
 }
