@@ -2379,13 +2379,19 @@ function renderQuestions(){
   filtered.forEach(q=>{
     const dc=q.difficulty==='Easy'?'diff-easy':q.difficulty==='Hard'?'diff-hard':'diff-medium';
     const imgHtml=q.image?`<img src="${sanitize(q.image)}" class="q-card-img" alt="Visual question" loading="lazy">`:'' // FIX: Bug 14 — sanitize image URL
+    let correctIdx = q.answer;
+    if (correctIdx === undefined && q.answerHash) {
+        correctIdx = q.options.findIndex(opt => hashOption(opt) === q.answerHash);
+    }
+    if (correctIdx === -1 || correctIdx === undefined) correctIdx = 0;
+    
     list.innerHTML+=`<div class="card q-card">
       <h4>${sanitize(q.q)}</h4>
       ${imgHtml}
       <div class="q-meta">
         <span>📁 ${sanitize(q.category)}</span><span>🎯 ${sanitize(q.round)}</span>
         <span class="${dc}">⚡ ${sanitize(q.difficulty)}</span>
-        <span style="color:var(--success);border-color:rgba(16,185,129,.2);background:rgba(16,185,129,.06)">✓ ${String.fromCharCode(65+(q.answer||0))}</span>
+        <span style="color:var(--success);border-color:rgba(16,185,129,.2);background:rgba(16,185,129,.06)">✓ ${String.fromCharCode(65+correctIdx)}</span>
         ${q.image?'<span style="color:var(--neon);border-color:rgba(0,245,255,.2);background:rgba(0,245,255,.06)">🖼 Image</span>':''}
       </div>
       <p style="font-size:.78rem;color:var(--text-dim);margin:6px 0">${q.options.map((o,j)=>`<span style="margin-right:12px">${String.fromCharCode(65+j)}) ${sanitize(o)}</span>`).join('')}</p>
@@ -2395,14 +2401,20 @@ function renderQuestions(){
       </div></div>`})} // FIX: Bug 14 — sanitize all question data
 
 function showAddQuestionModal(edit=null){
-  const q=edit||{q:'',options:['','','',''],answer:0,category:'Science & Tech',round:'Preliminary',difficulty:'Medium',image:''};
+  let cIdx = edit ? edit.answer : 0;
+  if (cIdx === undefined && edit && edit.answerHash) {
+      cIdx = edit.options.findIndex(opt => hashOption(opt) === edit.answerHash);
+  }
+  if (cIdx === -1 || cIdx === undefined) cIdx = 0;
+
+  const q=edit||{q:'',options:['','','',''],answerHash:'',category:'Science & Tech',round:'Preliminary',difficulty:'Medium',image:''};
   const cats=['Science & Tech','General Knowledge','Logical Reasoning','Current Affairs','Rapid Fire'];
   const rnds=['Preliminary','Visual','Buzzer','Finale'];const diffs=['Easy','Medium','Hard'];
   showModal(`<h3 style="font-family:var(--font-head);font-size:1.5rem;letter-spacing:2px;margin-bottom:20px">${edit?'EDIT':'ADD'} QUESTION</h3>
     <div class="form-group"><label>Question</label><textarea id="mqQ" rows="3">${q.q}</textarea></div>
     <div class="form-group"><label>Image URL <span style="color:var(--text-dim);font-size:.65rem;text-transform:none;letter-spacing:0">(optional, for Visual round)</span></label><input id="mqImg" value="${q.image||''}" placeholder="e.g. images/visual_q1.png"></div>
     ${q.options.map((o,i)=>`<div class="form-group"><label>Option ${String.fromCharCode(65+i)}</label><input id="mqO${i}" value="${o}"></div>`).join('')}
-    <div class="form-group"><label>Correct Answer</label><select id="mqA">${[0,1,2,3].map(i=>`<option value="${i}" ${q.answer===i?'selected':''}>Option ${String.fromCharCode(65+i)}</option>`).join('')}</select></div>
+    <div class="form-group"><label>Correct Answer</label><select id="mqA">${[0,1,2,3].map(i=>`<option value="${i}" ${cIdx===i?'selected':''}>Option ${String.fromCharCode(65+i)}</option>`).join('')}</select></div>
     <div class="form-group"><label>Category</label><select id="mqCat">${cats.map(c=>`<option ${q.category===c?'selected':''}>${c}</option>`).join('')}</select></div>
     <div class="form-group"><label>Round</label><select id="mqRnd">${rnds.map(r=>`<option ${q.round===r?'selected':''}>${r}</option>`).join('')}</select></div>
     <div class="form-group"><label>Difficulty</label><select id="mqDiff">${diffs.map(d=>`<option ${q.difficulty===d?'selected':''}>${d}</option>`).join('')}</select></div>
@@ -2430,7 +2442,8 @@ function saveQuestion(editId){
     toast('The correct answer option cannot be blank. Please fill it in or select a different correct answer.','error');return;
   }
 
-  const qObj={q:qText,options:options,answer:answerIdx,category:document.getElementById('mqCat').value,round:document.getElementById('mqRnd').value,difficulty:document.getElementById('mqDiff').value,image:imgVal||undefined};
+  const computedHash = hashOption(options[answerIdx]);
+  const qObj={q:qText,options:options,answerHash:computedHash,category:document.getElementById('mqCat').value,round:document.getElementById('mqRnd').value,difficulty:document.getElementById('mqDiff').value,image:imgVal||undefined};
   const questions=getQuestions();
   if(editId){const idx=questions.findIndex(q=>q.id===editId);if(idx>-1){questions[idx]={...questions[idx],...qObj};saveQuestions(questions);toast('Question updated','success')}}
   else{qObj.id='q'+Date.now();questions.push(qObj);saveQuestions(questions);toast('Question added','success')}
