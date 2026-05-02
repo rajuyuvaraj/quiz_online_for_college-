@@ -4899,13 +4899,16 @@
       scores[team] = (scores[team] || 0) + delta; saveScores(scores);
       if (correct) {
         sfxCorrect(); buzzerState.answered = true;
-        document.getElementById('bopt' + q.answer).classList.add('b-correct');
+        // FIX: resolve correct answer via answerHash
+        const correctMarkIdx = q.options.findIndex(opt => hashOption(opt) === q.answerHash);
+        if (correctMarkIdx >= 0) document.getElementById('bopt' + correctMarkIdx).classList.add('b-correct');
         toast(team + ' +1 point!', 'success')
       }
       else {
         sfxWrong(); buzzerState.buzzedTeam = null; buzzerState.phase = 'question';
-        document.querySelectorAll('.buzzer-team-btn').forEach(b => b.classList.remove('buzzed'));
         const v = document.getElementById('buzzerVerdict'); if (v) v.remove();
+        // Reset buzzes so other teams can buzz again
+        saveBuzzerState({ questionNum: buzzerState.current, buzzes: [], acceptingBuzzes: true });
         toast(team + ' -1 point! Others can buzz.', 'error')
       }
       updateBuzzerScoreboard();
@@ -5147,7 +5150,10 @@
 
     function finaleRevealAnswer() {
       const q = finaleState.questions[finaleState.current];
-      document.getElementById('fopt' + q.answer).classList.add('b-correct'); sfxCorrect()
+      // FIX: resolve correct answer via answerHash
+      const correctFinaleIdx = q.options.findIndex(opt => hashOption(opt) === q.answerHash);
+      if (correctFinaleIdx >= 0) document.getElementById('fopt' + correctFinaleIdx).classList.add('b-correct');
+      sfxCorrect()
     }
 
     function finaleProcessResults() {
