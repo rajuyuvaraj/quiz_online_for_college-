@@ -4169,13 +4169,17 @@
         return;
       }
       
-      // Migration: Update existing default questions with corrected hashes
+      // Migration: Update existing default questions with latest code values
       let modified = false;
       existing.forEach(eq => {
-        const def = defaults.find(d => d.id === eq.id || d.q === eq.q);
-        if (def && String(eq.answerHash) !== String(def.answerHash)) {
-          eq.answerHash = def.answerHash;
-          modified = true;
+        const def = defaults.find(d => d.id === eq.id); // Sync by ID to allow text changes
+        if (def) {
+          ['q', 'options', 'answerHash', 'image', 'round', 'category', 'difficulty'].forEach(prop => {
+            if (JSON.stringify(eq[prop]) !== JSON.stringify(def[prop])) {
+              eq[prop] = def[prop];
+              modified = true;
+            }
+          });
         }
       });
 
