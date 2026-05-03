@@ -2427,7 +2427,7 @@
     <div class="container">
       <div class="hero">
         <div class="hero-badge"><span class="hero-dot"></span> INNOVEX 2.0 — LIVE EVENT</div>
-        <h1>QUIZ MANIA</h1>
+        <h1>BRAINY BYTES</h1>
         <div class="hero-sub">TECHNICAL QUIZ</div>
         <p class="hero-detail">Dept. of Computer Science &nbsp;·&nbsp; Bengaluru City University</p>
         <p class="hero-detail" style="margin-top:4px">May 4–5, 2026</p>
@@ -3147,8 +3147,8 @@
 
     /* ─── COUNTDOWN ─── */
     function updateCountdown() {
-      const target = new Date('2026-05-04T09:00:00+05:30').getTime(), now = Date.now(), d = target - now;
-      if (d <= 0) { document.getElementById('countdown').innerHTML = '<p style="color:var(--neon);font-size:1.1rem;font-weight:600;font-family:var(--font-head);letter-spacing:3px">🎉 EVENT HAS STARTED!</p>'; return }
+      const target = new Date('2026-05-04T12:00:00+05:30').getTime(), now = Date.now(), d = target - now;
+      if (d <= 0) { document.getElementById('countdown').innerHTML = '<p style="color:var(--neon);font-size:1.1rem;font-weight:600;font-family:var(--font-head);letter-spacing:3px">🎉 JOIN THE QUIZ</p>'; return }
       const days = Math.floor(d / 864e5), hrs = Math.floor(d % 864e5 / 36e5), mins = Math.floor(d % 36e5 / 6e4), secs = Math.floor(d % 6e4 / 1e3);
       document.getElementById('countdown').innerHTML =
         `<div class="unit"><span class="num">${days}</span><span class="lbl">Days</span></div>
