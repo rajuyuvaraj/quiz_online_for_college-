@@ -3127,8 +3127,25 @@
           if (k === 'quizmania_questions') renderQuestions();
         }
       } else if (currentPlayer) {
+        // CRITICAL: If player is in a quiz, do NOT allow sync updates to disrupt the UI
+        // Exception: Disqualification must be handled immediately
+        if (k === 'quizmania_players') {
+           const p = getPlayers().find(p => p.phone === currentPlayer.phone);
+           if (p && p.isDisqualified && !currentPlayer.isDisqualified) {
+              currentPlayer = p;
+              if (quizState) {
+                clearInterval(quizState.timer);
+                quizState = null;
+              }
+              loadPlayerDash();
+              return;
+           }
+        }
+
+        if (quizState !== null) return; // Silent return if in quiz
+
         const playerEl = document.getElementById('page-player-dash');
-        if (playerEl && playerEl.classList.contains('active') && quizState === null) {
+        if (playerEl && playerEl.classList.contains('active')) {
           if (k === 'quizmania_scores' || k === 'quizmania_qualifications') {
              renderPlayerLeaderboard();
              refreshStatusBar();
@@ -3217,6 +3234,13 @@
 
     /* ─── NAVIGATION ─── */
     function navigate(page) {
+      // CRITICAL: Block navigation if in a quiz
+      if (quizState !== null && page !== 'landing' && page !== 'player-dash') {
+        if (!confirm('A quiz is in progress. Are you sure you want to leave? Your progress will be lost.')) return;
+        if (window.quizTimer) clearInterval(window.quizTimer);
+        quizState = null;
+      }
+
       // FIX: Bug 2 — Admin route guard
       if (page === 'admin-dash' && !isAdminAuthenticated()) {
         isAdmin = false; toast('Admin session required. Please log in.', 'error');
@@ -4303,10 +4327,12 @@
 
       // Setup/Clear Polling for state changes that don't come via Sync (backup)
       if (playerDashPollInterval) clearInterval(playerDashPollInterval);
-      playerDashPollInterval = setInterval(() => {
-        const currentAr = getActiveRound();
-        if (currentAr !== ar) loadPlayerDash();
-      }, 5000);
+      if (quizState === null) {
+        playerDashPollInterval = setInterval(() => {
+          const currentAr = getActiveRound();
+          if (currentAr !== ar) loadPlayerDash();
+        }, 5000);
+      }
 
       renderPlayerLeaderboard();
     }
@@ -4412,6 +4438,11 @@
           startIdx = i; // at least go to here
         }
       }
+
+      // Clear all dashboard background tasks to prevent interruptions
+      if (playerDashPollInterval) { clearInterval(playerDashPollInterval); playerDashPollInterval = null; }
+      if (playerLbRefreshInterval) { clearInterval(playerLbRefreshInterval); playerLbRefreshInterval = null; }
+      if (playerDashStatusInterval) { clearInterval(playerDashStatusInterval); playerDashStatusInterval = null; }
 
       quizState = {
         questions: shuffled,
@@ -4559,28 +4590,31 @@
     }
 
     function finishQuiz() {
-      clearInterval(quizTimer); confetti();
+      if (!quizState) return;
+      if (window.quizTimer) clearInterval(window.quizTimer);
+      confetti();
+      const ar = getActiveRound();
       const pointsEarned = quizState.score - (quizState.startScore || 0);
       const total = quizState.questions.length, pct = Math.round(pointsEarned / total * 100);
+
       document.getElementById('quizArea').innerHTML = `<div class="quiz-wrap">
-    <div class="card card-glow result-card">
-      <div style="font-size:2.5rem;margin-bottom:16px">${pct >= 80 ? '🏆' : pct >= 50 ? '🎯' : '💪'}</div>
-      <h2 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;margin-bottom:20px">Well done, ${sanitize(currentPlayer.name)}!</h2>
-      <span class="result-score">${pointsEarned}</span>
-      <span class="result-label">out of ${total}</span>
-      <div class="result-stats">
-        <div class="result-stat"><div class="sv" style="color:var(--success)">${pointsEarned}</div><div class="sl">Correct</div></div>
-        <div class="result-stat"><div class="sv" style="color:var(--danger)">${total - pointsEarned}</div><div class="sl">Wrong</div></div>
-        <div class="result-stat"><div class="sv" style="color:var(--gold)">${pct}%</div><div class="sl">Score</div></div>
-      </div>
-      <button class="btn btn-outline" style="margin-top:8px" onclick="navigate('player-dash')">← Back to Dashboard</button>
-    </div></div>`;
-      const s = quizState.score; // total accumulated score
-      const players = getPlayers(), idx = players.findIndex(p => p.phone === currentPlayer.phone);
+        <div class="card card-glow result-card">
+          <div style="font-size:2.5rem;margin-bottom:16px">${pct >= 80 ? '🏆' : pct >= 50 ? '🎯' : '💪'}</div>
+          <h2 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;margin-bottom:20px">Well done, ${sanitize(currentPlayer.name)}!</h2>
+          <span class="result-score">${pointsEarned}</span>
+          <span class="result-label">out of ${total}</span>
+          <div class="result-stats">
+            <div class="result-stat"><div class="sv" style="color:var(--success)">${pointsEarned}</div><div class="sl">Correct</div></div>
+            <div class="result-stat"><div class="sv" style="color:var(--danger)">${total - pointsEarned}</div><div class="sl">Wrong</div></div>
+            <div class="result-stat"><div class="sv" style="color:var(--gold)">${pct}%</div><div class="sl">Score</div></div>
+          </div>
+          <button class="btn btn-outline" style="margin-top:8px" onclick="navigate('player-dash')">← Back to Dashboard</button>
+        </div></div>`;
+
+      // Update global stats
+      let players = getPlayers(), idx = players.findIndex(p => p.phone === currentPlayer.phone);
       if (idx > -1) {
-        players[idx].score = s;
-        players[idx].scoreChecksum = computeScoreChecksum(players[idx].code, s);
-        const ar = getActiveRound();
+        players[idx].score = quizState.score;
         players[idx][`quizDone_${ar}`] = true;
         if (ar === 'Preliminary') players[idx].quizDone = true;
         savePlayers(players);
@@ -4588,7 +4622,14 @@
       }
       const scores = getScores(); scores[currentPlayer.team] = (scores[currentPlayer.team] || 0) + pointsEarned; saveScores(scores);
       LS.set('answers_' + currentPlayer.code, null); // clear session data
-      toast('Score saved: ' + pointsEarned + '/' + total, 'success')
+      
+      quizState = null;
+      lastPlayerView = ''; // Reset dash view cache
+      
+      // Restore background tasks
+      if (playerDashStatusInterval) clearInterval(playerDashStatusInterval);
+      playerDashStatusInterval = setInterval(refreshStatusBar, 3000);
+      toast('Quiz Completed!', 'success');
     }
 
     /* ─── ADMIN: PLAYERS TABLE ─── */
