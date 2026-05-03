@@ -3119,24 +3119,38 @@
     let currentPlayer = null, isAdmin = false, quizState = null;
 
     window.onSyncUpdate = (k) => {
-      if (k === 'quizmania_active_round' || k === 'quizmania_rounds' || k === 'quizmania_players' || k === 'quizmania_qualifications') {
-        if (isAdmin) {
-          const adminEl = document.getElementById('page-admin-dash');
-          if (adminEl && adminEl.classList.contains('active')) renderAdminLeaderboard();
+      if (isAdmin) {
+        const adminEl = document.getElementById('page-admin-dash');
+        if (adminEl && adminEl.classList.contains('active')) {
+          if (k === 'quizmania_active_round' || k === 'quizmania_rounds') renderRoundsGrid();
+          if (k === 'quizmania_scores' || k === 'quizmania_players') renderAdminLeaderboard();
+          if (k === 'quizmania_questions') renderQuestions();
         }
-        if (!isAdmin && currentPlayer && quizState === null) {
-          const playerEl = document.getElementById('page-player-dash');
-          if (playerEl && playerEl.classList.contains('active')) loadPlayerDash();
+      } else if (currentPlayer) {
+        const playerEl = document.getElementById('page-player-dash');
+        if (playerEl && playerEl.classList.contains('active') && quizState === null) {
+          if (k === 'quizmania_scores' || k === 'quizmania_qualifications') {
+             renderPlayerLeaderboard();
+             refreshStatusBar();
+          } else if (k === 'quizmania_active_round' || k === 'quizmania_rounds' || k === 'quizmania_buzzer') {
+             loadPlayerDash();
+          } else if (k === 'quizmania_players') {
+             // Only reload if current player's own status might have changed (disqualified, etc)
+             const p = getPlayers().find(p => p.phone === currentPlayer.phone);
+             if (p && (p.isDisqualified !== currentPlayer.isDisqualified || p.score !== currentPlayer.score)) {
+                currentPlayer = p;
+                loadPlayerDash();
+             }
+          }
         }
-        if (!isAdmin && !currentPlayer && k === 'quizmania_players') {
-          const savedSession = getPlayerSession();
-          if (savedSession) {
-            const player = getPlayers().find(p => p.code === savedSession.code);
-            if (player) {
-              currentPlayer = player;
-              document.getElementById('navUser').textContent = player.name;
-              navigate('player-dash');
-            }
+      } else if (!isAdmin && !currentPlayer && k === 'quizmania_players') {
+        const savedSession = getPlayerSession();
+        if (savedSession) {
+          const player = getPlayers().find(p => p.code === savedSession.code);
+          if (player) {
+            currentPlayer = player;
+            document.getElementById('navUser').textContent = player.name;
+            navigate('player-dash');
           }
         }
       }
@@ -4190,12 +4204,12 @@
   `;
     }
 
+    let lastPlayerView = '';
     function loadPlayerDash() {
       if (!currentPlayer) return;
-      document.getElementById('dashWelcome').textContent = 'Welcome back, ' + currentPlayer.name + '!'; // FIX: Bug 14 — textContent is already safe
+      document.getElementById('dashWelcome').textContent = 'Welcome back, ' + currentPlayer.name + '!'; 
       document.getElementById('dashTeam').textContent = 'Team: ' + currentPlayer.team + ' · ' + currentPlayer.college;
 
-      // FIX: Bug D-5 — Player logout button
       if (!document.getElementById('player-logout-btn')) {
         const loBtn = document.createElement('button');
         loBtn.id = 'player-logout-btn';
@@ -4213,7 +4227,6 @@
         document.querySelector('.dash-info').appendChild(loBtn);
       }
 
-      // FIX: Bug D-6 — Player status bar inject
       let sb = document.getElementById('player-status-bar');
       if (!sb) {
         sb = document.createElement('div');
@@ -4224,98 +4237,110 @@
         playerDashStatusInterval = setInterval(refreshStatusBar, 3000);
       }
       refreshStatusBar();
+      
       const ar = getActiveRound(), rs = document.getElementById('dashRoundStatus'), dc = document.getElementById('dashContent'), qa = document.getElementById('quizArea');
       if (ar) { rs.textContent = ar + ' — Active'; rs.className = 'round-badge badge-active' }
       else { rs.textContent = 'No active round'; rs.className = 'round-badge badge-inactive' }
+      
       const freshPlayer = getPlayers().find(p => p.phone === currentPlayer.phone); if (freshPlayer) currentPlayer = freshPlayer;
       const quals = getQualifications();
       const isQualified = !ar || !quals[ar] || quals[ar].includes(currentPlayer.team);
-
-      // FIX: Bug 13 — Clear any previous poll interval
-      if (playerDashPollInterval) { clearInterval(playerDashPollInterval); playerDashPollInterval = null; }
-
       const isDone = ar === 'Preliminary' ? (currentPlayer.quizDone_Preliminary || currentPlayer.quizDone) : currentPlayer[`quizDone_${ar}`];
 
-      if (currentPlayer.isDisqualified) {
-        dc.innerHTML = `<div class="card card-glow" style="text-align:center;padding:36px 24px;border-color:rgba(244,63,94,.4);box-shadow:0 0 20px rgba(244,63,94,.1)">
-      <div style="font-size:2.5rem;margin-bottom:12px">☠</div>
-      <h3 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;color:var(--danger);margin-bottom:8px">DISQUALIFIED</h3>
-      <p style="color:var(--text-dim)">Thank you for participating. You have been disqualified.</p></div>`;
-        qa.style.display = 'none'
+      let currentView = '';
+      if (currentPlayer.isDisqualified) currentView = 'disqualified';
+      else if (!isQualified) currentView = 'eliminated';
+      else if (ar === 'Buzzer') currentView = 'buzzer';
+      else if (ar && !isDone) currentView = 'live';
+      else if (ar && isDone) currentView = 'done';
+      else currentView = 'waiting';
+
+      if (lastPlayerView !== currentView) {
+        lastPlayerView = currentView;
+        if (currentView === 'disqualified') {
+          dc.innerHTML = `<div class="card card-glow" style="text-align:center;padding:36px 24px;border-color:rgba(244,63,94,.4);box-shadow:0 0 20px rgba(244,63,94,.1)">
+            <div style="font-size:2.5rem;margin-bottom:12px">☠</div>
+            <h3 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;color:var(--danger);margin-bottom:8px">DISQUALIFIED</h3>
+            <p style="color:var(--text-dim)">Thank you for participating. You have been disqualified.</p></div>`;
+        } else if (currentView === 'eliminated') {
+          dc.innerHTML = `<div class="card card-glow" style="text-align:center;padding:36px 24px;border-color:rgba(244,63,94,.4);box-shadow:0 0 20px rgba(244,63,94,.1)">
+            <div style="font-size:2.5rem;margin-bottom:12px">☠</div>
+            <h3 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;color:var(--danger);margin-bottom:8px">ELIMINATED</h3>
+            <p style="color:var(--text-dim)">Thank you for participating! Your team did not advance to the ${sanitize(ar)} round.</p></div>`;
+        } else if (currentView === 'buzzer') {
+          dc.innerHTML = `<div class="card card-glow player-buzzer-wrap">
+            <div style="font-size:2.5rem;margin-bottom:8px">🔔</div>
+            <h3 style="font-family:var(--font-head);font-size:1.8rem;letter-spacing:2px;color:var(--neon);margin-bottom:8px">BUZZER ROUND</h3>
+            <p style="color:var(--text-dim);margin-bottom:24px;font-size:.88rem">Listen to the question, then hit the buzzer!</p>
+            <button id="playerBuzzerBtn" class="player-buzzer-btn" onclick="playerBuzz()">🔔<br>BUZZ!</button>
+            <div id="buzzFeedback" style="margin-top:16px;font-size:.9rem;min-height:24px"></div>
+          </div>`;
+        } else if (currentView === 'live') {
+          dc.innerHTML = `<div class="card card-glow" style="text-align:center;padding:36px 24px">
+            <div style="font-size:2.5rem;margin-bottom:12px">🎯</div>
+            <h3 style="font-family:var(--font-head);font-size:1.8rem;letter-spacing:2px;color:var(--neon);margin-bottom:8px">${ar.toUpperCase()} ROUND IS LIVE!</h3>
+            <p style="color:var(--text-dim);margin-bottom:24px;font-size:.88rem">10 questions · 30 seconds each · No going back</p>
+            <button class="btn btn-neon" onclick="startQuiz()" style="padding:12px 32px;font-size:1rem">Start Quiz →</button></div>`;
+        } else if (currentView === 'done') {
+          dc.innerHTML = `<div class="card card-glow" style="text-align:center;padding:36px 24px">
+            <div style="color:var(--success);font-size:2.5rem;margin-bottom:12px">✓</div>
+            <h3 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;color:var(--success);margin-bottom:8px">QUIZ COMPLETED</h3>
+            <span style="font-family:var(--font-mono);font-size:2.5rem;color:var(--neon)">${currentPlayer.score}</span>
+            <span style="display:block;color:var(--text-dim);font-size:.78rem;text-transform:uppercase;letter-spacing:1px;margin-top:4px">Your Score</span></div>`;
+        } else {
+          dc.innerHTML = `<div class="card" style="text-align:center;padding:32px">
+            <div style="font-size:2rem;margin-bottom:12px">⏳</div>
+            <p style="color:var(--text-mid);font-size:.92rem;line-height:1.6">Waiting for the quiz to begin. Please stand by — the quizmaster will start the round shortly!</p></div>`;
+        }
       }
-      else if (!isQualified) {
-        dc.innerHTML = `<div class="card card-glow" style="text-align:center;padding:36px 24px;border-color:rgba(244,63,94,.4);box-shadow:0 0 20px rgba(244,63,94,.1)">
-      <div style="font-size:2.5rem;margin-bottom:12px">☠</div>
-      <h3 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;color:var(--danger);margin-bottom:8px">ELIMINATED</h3>
-      <p style="color:var(--text-dim)">Thank you for participating! Your team did not advance to the ${sanitize(ar)} round.</p>
-      <p style="color:var(--text-dim);font-size:.8rem;margin-top:8px">Watch the live leaderboards below.</p></div>`;
-        qa.style.display = 'none'
+
+      // Update Buzzer elements if in Buzzer view (without re-rendering whole card)
+      if (currentView === 'buzzer') {
+        updatePlayerBuzzerUI();
       }
-      else if (ar === 'Buzzer') {
-        // FIX: Interactive buzzer — show buzzer button on player's phone
-        const bs = getBuzzerState();
-        const alreadyBuzzed = bs.buzzes && bs.buzzes.some(b => b.team === currentPlayer.team);
-        dc.innerHTML = `<div class="card card-glow player-buzzer-wrap">
-      <div style="font-size:2.5rem;margin-bottom:8px">🔔</div>
-      <h3 style="font-family:var(--font-head);font-size:1.8rem;letter-spacing:2px;color:var(--neon);margin-bottom:8px">BUZZER ROUND</h3>
-      <p style="color:var(--text-dim);margin-bottom:24px;font-size:.88rem">Listen to the question, then hit the buzzer!</p>
-      <button id="playerBuzzerBtn" class="player-buzzer-btn" onclick="playerBuzz()" ${alreadyBuzzed ? 'disabled' : ''}>🔔<br>BUZZ!</button>
-      <div id="buzzFeedback" style="margin-top:16px;font-size:.9rem;min-height:24px">${alreadyBuzzed ? '<span style="color:var(--success)">✓ BUZZED! Waiting for quizmaster...</span>' : (bs.acceptingBuzzes ? '<span style="color:var(--neon)">⚡ BUZZER IS LIVE — TAP NOW!</span>' : '<span style="color:var(--text-dim)">Waiting for quizmaster to reveal the question...</span>')}</div>
-    </div>`;
-        qa.style.display = 'none';
-        // Poll for round change
-        if (playerDashPollInterval) { clearInterval(playerDashPollInterval); playerDashPollInterval = null; }
-        playerDashPollInterval = setInterval(() => {
-          if (getActiveRound() !== 'Buzzer') { clearInterval(playerDashPollInterval); playerDashPollInterval = null; loadPlayerDash(); }
-        }, 5000);
+
+      qa.style.display = 'none';
+
+      // Setup/Clear Polling for state changes that don't come via Sync (backup)
+      if (playerDashPollInterval) clearInterval(playerDashPollInterval);
+      playerDashPollInterval = setInterval(() => {
+        const currentAr = getActiveRound();
+        if (currentAr !== ar) loadPlayerDash();
+      }, 5000);
+
+      renderPlayerLeaderboard();
+    }
+
+    function updatePlayerBuzzerUI() {
+      const bs = getBuzzerState();
+      const alreadyBuzzed = bs.buzzes && bs.buzzes.some(b => b.team === currentPlayer.team);
+      const btn = document.getElementById('playerBuzzerBtn');
+      const feedback = document.getElementById('buzzFeedback');
+      if (btn) btn.disabled = alreadyBuzzed;
+      if (feedback) {
+        let txt = '';
+        if (alreadyBuzzed) txt = '<span style="color:var(--success)">✓ BUZZED! Waiting for quizmaster...</span>';
+        else if (bs.acceptingBuzzes) txt = '<span style="color:var(--neon);font-weight:bold">⚡ BUZZER IS LIVE — TAP NOW!</span>';
+        else txt = '<span style="color:var(--text-dim)">Waiting for quizmaster to reveal the question...</span>';
+        if (feedback.innerHTML !== txt) feedback.innerHTML = txt;
       }
-      else if (ar && !isDone) {
-        dc.innerHTML = `<div class="card card-glow" style="text-align:center;padding:36px 24px">
-      <div style="font-size:2.5rem;margin-bottom:12px">🎯</div>
-      <h3 style="font-family:var(--font-head);font-size:1.8rem;letter-spacing:2px;color:var(--neon);margin-bottom:8px">${ar.toUpperCase()} ROUND IS LIVE!</h3>
-      <p style="color:var(--text-dim);margin-bottom:24px;font-size:.88rem">10 questions · 30 seconds each · No going back</p>
-      <button class="btn btn-neon" onclick="startQuiz()" style="padding:12px 32px;font-size:1rem">Start Quiz →</button></div>`;
-        qa.style.display = 'none'
-      }
-      else if (ar && isDone) {
-        dc.innerHTML = `<div class="card card-glow" style="text-align:center;padding:36px 24px">
-      <div style="color:var(--success);font-size:2.5rem;margin-bottom:12px">✓</div>
-      <h3 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;color:var(--success);margin-bottom:8px">QUIZ COMPLETED</h3>
-      <span style="font-family:var(--font-mono);font-size:2.5rem;color:var(--neon)">${currentPlayer.score}</span>
-      <span style="display:block;color:var(--text-dim);font-size:.78rem;text-transform:uppercase;letter-spacing:1px;margin-top:4px">Your Score</span></div>`;
-        qa.style.display = 'none'
-      }
-      
-      else {
-        // FIX: Bug 13 — Friendly waiting message instead of indefinite loading
-        dc.innerHTML = `<div class="card" style="text-align:center;padding:32px">
-      <div style="font-size:2rem;margin-bottom:12px">⏳</div>
-      <p style="color:var(--text-mid);font-size:.92rem;line-height:1.6">Waiting for the quiz to begin. Please stand by — the quizmaster will start the round shortly!</p>
-      <p style="color:var(--text-dim);font-size:.75rem;margin-top:10px">This page auto-refreshes every 5 seconds.</p></div>`;
-        qa.style.display = 'none';
-        // FIX: Bug 13 — Poll for active round every 5 seconds
-        playerDashPollInterval = setInterval(() => {
-          if (getActiveRound()) { clearInterval(playerDashPollInterval); playerDashPollInterval = null; loadPlayerDash(); }
-        }, 5000);
-      }
-      renderPlayerLeaderboard()
     }
 
     // FIX: Bug 18 — Player leaderboard empty state + auto-refresh
-    let playerLbRefreshInterval = null;
+    let playerLbRefreshInterval = null, lastLbHtml = '';
     function renderPlayerLeaderboard() {
       const isVis = LS.get('leaderboardVisible') !== false;
-      const tbody = document.querySelector('#playerLeaderboard tbody'); tbody.innerHTML = '';
+      const tbody = document.querySelector('#playerLeaderboard tbody'); 
+      if (!tbody) return;
 
+      let finalHtml = '';
       if (!isVis) {
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-dim);padding:24px">Leaderboard is currently hidden by the admin.</td></tr>';
+        finalHtml = '<tr><td colspan="3" style="text-align:center;color:var(--text-dim);padding:24px">Leaderboard is currently hidden by the admin.</td></tr>';
       } else {
         const scores = getScores(), sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
         if (sorted.length === 0 || sorted.every(([, s]) => s === 0)) {
-          // FIX: Bug 18 — Empty state
-          tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text-dim);padding:24px">No scores yet — the quiz hasn\'t started!</td></tr>';
+          finalHtml = '<tr><td colspan="3" style="text-align:center;color:var(--text-dim);padding:24px">No scores yet — the quiz hasn\'t started!</td></tr>';
         } else {
-          let finalHtml = '';
           sorted.forEach(([team, score], i) => {
             const rankClass = i === 0 ? 'lb-rank-1' : i === 1 ? 'lb-rank-2' : i === 2 ? 'lb-rank-3' : '';
             const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1;
@@ -4325,13 +4350,16 @@
             const rowId = isMe ? 'id="my-lb-row"' : '';
             finalHtml += `<tr class="${rankClass}" style="${meStyle}" ${rowId}><td>${medal}</td><td>${sanitize(team)}${meBadge}</td><td class="mono" style="color:var(--neon)">${score}</td></tr>`
           });
-          tbody.innerHTML = finalHtml;
-          const el = document.getElementById('my-lb-row');
-          if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
         }
       }
 
-      // FIX: Bug 18 — Auto-refresh player leaderboard every 10 seconds
+      if (lastLbHtml !== finalHtml) {
+        lastLbHtml = finalHtml;
+        tbody.innerHTML = finalHtml;
+        const el = document.getElementById('my-lb-row');
+        if (el && isVis) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+
       if (!playerLbRefreshInterval) {
         playerLbRefreshInterval = setInterval(() => {
           if (currentPlayer && document.getElementById('page-player-dash')?.classList.contains('active')) renderPlayerLeaderboard();
