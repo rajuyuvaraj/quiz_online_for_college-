@@ -3123,7 +3123,7 @@
         const adminEl = document.getElementById('page-admin-dash');
         if (adminEl && adminEl.classList.contains('active')) {
           if (k === 'quizmania_active_round' || k === 'quizmania_rounds') renderRoundsGrid();
-          if (k === 'quizmania_scores' || k === 'quizmania_players') renderAdminLeaderboard();
+          if (k === 'quizmania_scores' || k === 'quizmania_players') { renderAdminLeaderboard(); renderPlayersTable(); }
           if (k === 'quizmania_questions') renderQuestions();
         }
       } else if (currentPlayer) {
@@ -4225,9 +4225,11 @@
         toast('Score integrity issue detected. Score reset to 0.', 'error');
       }
 
+      const teamScore = (getScores() || {})[currentPlayer.team] || 0;
+
       sb.innerHTML = `
     <div><span style="color:var(--text-dim)">Round:</span> <strong style="color:var(--neon)">${sanitize(ar)}</strong></div>
-    <div><span style="color:var(--text-dim)">Score:</span> <strong style="color:var(--neon)">${currentPlayer.score}</strong></div>
+    <div><span style="color:var(--text-dim)">Team Score:</span> <strong style="color:var(--neon)">${teamScore}</strong></div>
     <div><span style="color:var(--text-dim)">Answered:</span> <strong>${ansCount}</strong></div>
   `;
     }
@@ -4278,8 +4280,7 @@
       let currentView = '';
       if (currentPlayer.isDisqualified) currentView = 'disqualified';
       else if (!isQualified) currentView = 'eliminated';
-      else if (ar === 'Buzzer') currentView = 'buzzer';
-      else if (ar && !isDone) currentView = 'live';
+      else if (ar && !isDone) currentView = 'live'; // Changed: Buzzer acts as normal test
       else if (ar && isDone) currentView = 'done';
       else currentView = 'waiting';
 
@@ -4304,17 +4305,19 @@
             <div id="buzzFeedback" style="margin-top:16px;font-size:.9rem;min-height:24px"></div>
           </div>`;
         } else if (currentView === 'live') {
+          const qText = ar === 'Buzzer' ? '5 seconds each' : '30 seconds each';
           dc.innerHTML = `<div class="card card-glow" style="text-align:center;padding:36px 24px">
             <div style="font-size:2.5rem;margin-bottom:12px">🎯</div>
             <h3 style="font-family:var(--font-head);font-size:1.8rem;letter-spacing:2px;color:var(--neon);margin-bottom:8px">${ar.toUpperCase()} ROUND IS LIVE!</h3>
-            <p style="color:var(--text-dim);margin-bottom:24px;font-size:.88rem">10 questions · 30 seconds each · No going back</p>
+            <p style="color:var(--text-dim);margin-bottom:24px;font-size:.88rem">10 questions · ${qText} · No going back</p>
             <button class="btn btn-neon" onclick="startQuiz()" style="padding:12px 32px;font-size:1rem">Start Quiz →</button></div>`;
         } else if (currentView === 'done') {
+          const tScore = (getScores() || {})[currentPlayer.team] || 0;
           dc.innerHTML = `<div class="card card-glow" style="text-align:center;padding:36px 24px">
             <div style="color:var(--success);font-size:2.5rem;margin-bottom:12px">✓</div>
             <h3 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;color:var(--success);margin-bottom:8px">QUIZ COMPLETED</h3>
-            <span style="font-family:var(--font-mono);font-size:2.5rem;color:var(--neon)">${currentPlayer.score}</span>
-            <span style="display:block;color:var(--text-dim);font-size:.78rem;text-transform:uppercase;letter-spacing:1px;margin-top:4px">Your Score</span></div>`;
+            <span style="font-family:var(--font-mono);font-size:2.5rem;color:var(--neon)">Wait! View your Team Score above!</span>
+            <span style="display:block;color:var(--text-dim);font-size:.78rem;text-transform:uppercase;letter-spacing:1px;margin-top:4px"></span></div>`;
         } else {
           dc.innerHTML = `<div class="card" style="text-align:center;padding:32px">
             <div style="font-size:2rem;margin-bottom:12px">⏳</div>
@@ -4542,16 +4545,42 @@
     }
 
     function startTimer() {
-      let t = 30; clearInterval(quizTimer);
+      const ar = getActiveRound();
+      const maxT = (ar === 'Buzzer') ? 5 : 30;
+      let startTime = Date.now();
+      
+      clearInterval(quizTimer);
       const el = document.getElementById('qTimer'), ring = document.getElementById('timerRing'), circ = document.getElementById('timerCircle'), full = 2 * Math.PI * 30;
+      
       quizTimer = setInterval(() => {
-        t--; if (!el) return;
-        el.textContent = t;
-        if (circ) circ.style.strokeDashoffset = (full * (1 - t / 30));
-        if (t <= 10) { el.classList.add('danger'); ring && ring.classList.add('danger') }
+        if (!el) { clearInterval(quizTimer); return; }
+        
+        let elapsed = (Date.now() - startTime) / 1000;
+        let t = maxT - elapsed;
+        
+        if (t <= 0) {
+          t = 0;
+          el.textContent = "0.00";
+          if (circ) circ.style.strokeDashoffset = full;
+          clearInterval(quizTimer);
+          autoSubmit();
+          return;
+        }
+
+        // Millisecond precision (e.g. 4.93)
+        el.textContent = t.toFixed(2);
+        
+        // Update SVG circle percentage
+        if (circ) circ.style.strokeDashoffset = (full * (1 - t / maxT));
+        
+        const dangerThreshold = maxT === 5 ? 2.5 : 10;
+        if (t <= dangerThreshold) { el.classList.add('danger'); ring && ring.classList.add('danger') }
         else { el.classList.remove('danger'); ring && ring.classList.remove('danger') }
-        if (t <= 0) { clearInterval(quizTimer); autoSubmit() }
-      }, 1000)
+      }, 20); // 20ms update for smooth UI
+      
+      if (quizState) {
+         quizState.questionStartTime = startTime;
+      }
     }
 
     function autoSubmit() {
@@ -4578,8 +4607,14 @@
     function hashOption(str) { let h = 0, s = str + "INNOVEX_SALT"; for (let i = 0; i < s.length; i++) { h = (h << 5) - h + s.charCodeAt(i); h |= 0; } return h.toString(); }
     function checkAnswer() {
       const q = quizState.questions[quizState.current];
-      if (quizState.selected !== null && hashOption(q.options[quizState.selected]) === String(q.answerHash)) {
-        quizState.score++;
+      const ar = getActiveRound();
+      if (quizState.selected !== null) {
+        const isCorrect = hashOption(q.options[quizState.selected]) === String(q.answerHash);
+        if (isCorrect) {
+          quizState.score++;
+        } else if (ar === 'Buzzer') {
+          quizState.score--; // Penalty for Buzzer
+        }
         currentPlayer.score = quizState.score;
         // Update local real-time
         const players = getPlayers();
@@ -4598,19 +4633,39 @@
       if (window.quizTimer) clearInterval(window.quizTimer);
       confetti();
       const ar = getActiveRound();
-      const pointsEarned = quizState.score - (quizState.startScore || 0);
-      const total = quizState.questions.length, pct = Math.round(pointsEarned / total * 100);
+      
+      // FIX: Calculate pointsEarned explicitly based on the answers they got right in THIS round
+      // instead of relying on startScore, which breaks if the page was refreshed mid-quiz.
+      let pointsEarned = 0;
+      let questionsCorrect = 0;
+      quizState.questions.forEach(q => {
+        const a = quizState.answers[q.id];
+        if (a !== undefined && a !== -1) {
+          if (hashOption(q.options[a]) === String(q.answerHash)) {
+            pointsEarned++;
+            questionsCorrect++;
+          } else if (ar === 'Buzzer') {
+            pointsEarned--;
+          }
+        }
+      });
+
+      const total = quizState.questions.length;
+      const pct = Math.round(questionsCorrect / total * 100);
+
+      // Re-sync personal score just to be sure it matches reality
+      const priorBaseScore = (quizState.startScore && !isNaN(quizState.startScore)) ? quizState.startScore : (currentPlayer.score - pointsEarned);
 
       document.getElementById('quizArea').innerHTML = `<div class="quiz-wrap">
         <div class="card card-glow result-card">
           <div style="font-size:2.5rem;margin-bottom:16px">${pct >= 80 ? '🏆' : pct >= 50 ? '🎯' : '💪'}</div>
           <h2 style="font-family:var(--font-head);font-size:1.6rem;letter-spacing:2px;margin-bottom:20px">Well done, ${sanitize(currentPlayer.name)}!</h2>
           <span class="result-score">${pointsEarned}</span>
-          <span class="result-label">out of ${total}</span>
+          <span class="result-label">points earned this round</span>
           <div class="result-stats">
-            <div class="result-stat"><div class="sv" style="color:var(--success)">${pointsEarned}</div><div class="sl">Correct</div></div>
-            <div class="result-stat"><div class="sv" style="color:var(--danger)">${total - pointsEarned}</div><div class="sl">Wrong</div></div>
-            <div class="result-stat"><div class="sv" style="color:var(--gold)">${pct}%</div><div class="sl">Score</div></div>
+            <div class="result-stat"><div class="sv" style="color:var(--success)">${questionsCorrect}</div><div class="sl">Correct</div></div>
+            <div class="result-stat"><div class="sv" style="color:var(--danger)">${total - questionsCorrect}</div><div class="sl">Wrong</div></div>
+            <div class="result-stat"><div class="sv" style="color:var(--gold)">${pct}%</div><div class="sl">Accuracy</div></div>
           </div>
           <button class="btn btn-outline" style="margin-top:8px" onclick="navigate('player-dash')">← Back to Dashboard</button>
         </div></div>`;
@@ -4619,12 +4674,17 @@
       let players = getPlayers(), idx = players.findIndex(p => p.phone === currentPlayer.phone);
       if (idx > -1) {
         players[idx].score = quizState.score;
+        players[idx].scoreChecksum = computeScoreChecksum(players[idx].code, players[idx].score);
         players[idx][`quizDone_${ar}`] = true;
         if (ar === 'Preliminary') players[idx].quizDone = true;
         savePlayers(players);
         currentPlayer = players[idx];
       }
-      const scores = getScores(); scores[currentPlayer.team] = (scores[currentPlayer.team] || 0) + pointsEarned; saveScores(scores);
+      
+      const scores = getScores(); 
+      scores[currentPlayer.team] = (scores[currentPlayer.team] || 0) + pointsEarned; 
+      saveScores(scores);
+      
       LS.set('answers_' + currentPlayer.code, null); // clear session data
       
       quizState = null;
@@ -4653,12 +4713,31 @@
         tbody.innerHTML += `<tr style="${trStyle}">
     <td>${sanitize(p.name)}</td><td class="mono">${sanitize(p.phone)}</td><td>${sanitize(p.college)}</td><td>${sanitize(p.team)}</td>
     <td class="mono" style="color:var(--neon)">${sanitize(p.code)}</td>
-    <td class="mono">${p.score}</td>
+    <td class="mono">${scores[p.team] || 0}</td>
     <td style="display:flex;gap:4px;flex-wrap:wrap">${disBtn}<button class="btn btn-danger btn-sm" onclick="deletePlayer('${sanitize(p.phone)}')">Delete</button></td></tr>`
       })
     } // FIX: Bug 14 — sanitize all player data
 
-    function deletePlayer(phone) { if (!confirm('Delete this player?')) return; const players = getPlayers().filter(p => p.phone !== phone); savePlayers(players); renderPlayersTable(); toast('Player deleted', 'info') }
+    function deletePlayer(phone) { 
+      if (!confirm('Delete this player?')) return; 
+      const allPlayers = getPlayers();
+      const playerToDelete = allPlayers.find(p => p.phone === phone);
+      const players = allPlayers.filter(p => p.phone !== phone); 
+      savePlayers(players); 
+
+      if (playerToDelete) {
+        // If no more players in this team, clear their score
+        if (!players.some(p => p.team === playerToDelete.team)) {
+          const scores = getScores();
+          delete scores[playerToDelete.team];
+          saveScores(scores);
+        }
+      }
+
+      renderPlayersTable(); 
+      renderAdminLeaderboard();
+      toast('Player deleted', 'info'); 
+    }
 
     function toggleDisqualify(phone) {
       if (!confirm('Toggle disqualification for this player?')) return;
@@ -4675,8 +4754,9 @@
     // FIX: Bug 15 — Export CSV empty check
     function exportCSV() {
       const players = getPlayers();
+      const scores = getScores();
       if (players.length === 0) { toast('No players to export. Register some players first.', 'info'); return; }
-      let csv = 'Name,Phone,College,Team,Code,Score\n'; players.forEach(p => { csv += `"${p.name}","${p.phone}","${p.college}","${p.team}","${p.code}",${p.score}\n` });
+      let csv = 'Name,Phone,College,Team,Code,Score\n'; players.forEach(p => { csv += `"${p.name}","${p.phone}","${p.college}","${p.team}","${p.code}",${scores[p.team] || 0}\n` });
       const blob = new Blob([csv], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'quizmania_players.csv'; a.click(); toast('CSV exported', 'success')
     }
 
@@ -4808,7 +4888,13 @@
         }
         tbody.innerHTML += `<tr><td>${medal}</td><td>${sanitize(team)}</td><td class="mono" style="color:var(--neon)">${score}</td>
       <td>${statusHtml}</td>
-      <td><input type="number" value="${score}" min="0" style="width:70px;padding:5px 8px;background:rgba(255,255,255,.04);border:1px solid var(--glass-border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:.82rem" onchange="adjustScore('${sanitize(team).replace(/'/g, "\\\'")}',this.value)"></td></tr>`
+      <td>
+        <div style="display:flex;align-items:center;gap:4px">
+          <button class="btn btn-outline btn-icon" style="height:28px;width:28px;font-size:1rem" onclick="adjustScoreDelta('${sanitize(team).replace(/'/g, "\\\'")}', -10)">-</button>
+          <input type="number" value="${score}" min="0" style="width:60px;text-align:center;padding:4px;background:rgba(255,255,255,.04);border:1px solid var(--glass-border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:.82rem" onchange="adjustScore('${sanitize(team).replace(/'/g, "\\\'")}',this.value)">
+          <button class="btn btn-outline btn-icon" style="height:28px;width:28px;font-size:1rem" onclick="adjustScoreDelta('${sanitize(team).replace(/'/g, "\\\'")}', 10)">+</button>
+        </div>
+      </td></tr>`
       }); // FIX: Bug 14 — sanitize team, Bug 12 — min="0"
       const chart = document.getElementById('barChart'); const top5 = sorted.slice(0, 5); const max = Math.max(...top5.map(t => t[1]), 1); chart.innerHTML = '';
       const colors = ['var(--neon)', 'var(--neon2)', 'var(--success)', 'var(--gold)', 'var(--danger)'];
@@ -4866,6 +4952,16 @@
       const newScore = Math.max(0, parseInt(val) || 0);
       if ((parseInt(val) || 0) < 0) { toast('Score cannot go below 0.', 'error'); }
       const scores = getScores(); scores[team] = newScore; saveScores(scores); toast('Score updated for ' + sanitize(team), 'success'); renderAdminLeaderboard();
+    }
+
+    function adjustScoreDelta(team, delta) {
+      const scores = getScores();
+      const currentScore = parseInt(scores[team]) || 0;
+      const newScore = Math.max(0, currentScore + delta);
+      scores[team] = newScore;
+      saveScores(scores);
+      toast('Score updated for ' + sanitize(team), 'success');
+      renderAdminLeaderboard();
     }
 
     /* ─── ADMIN: SETTINGS ─── */
